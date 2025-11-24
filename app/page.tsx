@@ -7,7 +7,7 @@ export default function Home() {
   const [data, setData] = useState<{ hello: string } | null>(null);
 
   useEffect(() => {
-    fetch('/api/markets')
+    fetch('/api/markets?sport=americanfootball_nfl')
       .then((res) => res.json())
       .then((data) => setData(data));
   }, []);
