@@ -74,7 +74,7 @@ export async function GET(request: Request) {
     
     // Get all markets to determine bet status
     const allMarkets = await client.view({
-      function: `${CONTRACT_ADDRESS}::sports_betting::get_all_markets`,
+      function: `${CONTRACT_ADDRESS}::sports_betting::get_markets`,
       type_arguments: [],
       arguments: []
     });
