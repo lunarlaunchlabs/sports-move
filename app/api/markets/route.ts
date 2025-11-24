@@ -28,9 +28,26 @@ export async function GET(request: Request) {
         const now = Date.now();
         
         if (commenceTime > now) {
-          const txHash = await SportsBettingContract.createMarket(market);
-          console.log(`✅ Market synced: ${market.id} - TX: ${txHash}`);
-          syncResults.created++;
+          // Check if market already exists on blockchain
+          const existingMarket = await SportsBettingContract.getMarket(market.id);
+          
+          if (existingMarket) {
+            // Market exists - check if it needs updating
+            if (existingMarket.is_resolved || existingMarket.is_cancelled) {
+              console.log(`ℹ️  Market already finalized: ${market.id}`);
+              continue; // Skip resolved/cancelled markets
+            }
+            
+            // Update odds if they changed
+            const txHash = await SportsBettingContract.updateMarketOdds(market);
+            console.log(`✅ Market odds updated: ${market.id} - TX: ${txHash}`);
+            syncResults.updated++;
+          } else {
+            // Create new market
+            const txHash = await SportsBettingContract.createMarket(market);
+            console.log(`✅ Market created: ${market.id} - TX: ${txHash}`);
+            syncResults.created++;
+          }
         }
       } catch (error: any) {
         console.error(`❌ Failed to sync market ${market.id}:`, error.message);

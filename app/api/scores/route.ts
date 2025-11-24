@@ -26,6 +26,26 @@ export async function GET(request: Request) {
       try {
         // Only process completed games
         if (score.completed) {
+          // Check if market exists and is not already resolved
+          const market = await SportsBettingContract.getMarket(score.id);
+          
+          if (!market) {
+            console.log(`⚠️  Market not found on blockchain: ${score.id}`);
+            resolveResults.failed++;
+            resolveResults.errors.push(`${score.id}: Market not found on blockchain`);
+            continue;
+          }
+
+          if (market.is_resolved) {
+            console.log(`ℹ️  Market already resolved: ${score.id} (winner: ${market.winning_outcome})`);
+            continue; // Skip already resolved markets
+          }
+
+          if (market.is_cancelled) {
+            console.log(`ℹ️  Market is cancelled: ${score.id}`);
+            continue; // Skip cancelled markets
+          }
+
           // Resolve the market
           const resolveTxHash = await SportsBettingContract.resolveMarket(score);
           console.log(`✅ Market resolved: ${score.id} - TX: ${resolveTxHash}`);
