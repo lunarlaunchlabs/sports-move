@@ -182,9 +182,12 @@ export class SportsBettingContract {
           throw new Error('Could not find scores for both teams');
         }
 
-        if (homeScore.score > awayScore.score) {
+        const homeScoreNum = parseInt(homeScore.score);
+        const awayScoreNum = parseInt(awayScore.score);
+
+        if (homeScoreNum > awayScoreNum) {
           winningOutcome = score.home_team;
-        } else if (awayScore.score > homeScore.score) {
+        } else if (awayScoreNum > homeScoreNum) {
           winningOutcome = score.away_team;
         } else {
           // In case of a tie, we might want to cancel the market
