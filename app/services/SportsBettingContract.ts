@@ -68,9 +68,9 @@ export class SportsBettingContract {
 
       // Convert American odds to our format (u64 + boolean)
       const homeOdds = Math.abs(homeOutcome.price);
-      const homeOddsIsNegative = homeOutcome.price < 0;
+      const homeOddsIsPositive = homeOutcome.price > 0;
       const awayOdds = Math.abs(awayOutcome.price);
-      const awayOddsIsNegative = awayOutcome.price < 0;
+      const awayOddsIsPositive = awayOutcome.price > 0;
 
       // Convert commence_time to unix timestamp
       const commenceTime = Math.floor(new Date(market.commence_time).getTime() / 1000);
@@ -87,9 +87,9 @@ export class SportsBettingContract {
           market.away_team,             // away_team
           commenceTime.toString(),      // commence_time
           homeOdds.toString(),          // home_odds
+          homeOddsIsPositive,           // home_odds_positive
           awayOdds.toString(),          // away_odds
-          homeOddsIsNegative,           // home_odds_is_negative
-          awayOddsIsNegative            // away_odds_is_negative
+          awayOddsIsPositive            // away_odds_positive
         ]
       };
 
@@ -135,9 +135,9 @@ export class SportsBettingContract {
       }
 
       const homeOdds = Math.abs(homeOutcome.price);
-      const homeOddsIsNegative = homeOutcome.price < 0;
+      const homeOddsIsPositive = homeOutcome.price > 0;
       const awayOdds = Math.abs(awayOutcome.price);
-      const awayOddsIsNegative = awayOutcome.price < 0;
+      const awayOddsIsPositive = awayOutcome.price > 0;
 
       const payload = {
         type: 'entry_function_payload',
@@ -146,9 +146,9 @@ export class SportsBettingContract {
         arguments: [
           market.id,                // game_id
           homeOdds.toString(),      // home_odds
+          homeOddsIsPositive,       // home_odds_positive
           awayOdds.toString(),      // away_odds
-          homeOddsIsNegative,       // home_odds_is_negative
-          awayOddsIsNegative        // away_odds_is_negative
+          awayOddsIsPositive        // away_odds_positive
         ]
       };
 
