@@ -189,52 +189,32 @@ async function runTests() {
     // ========================================================================
     logSection('STEP 2: Setup Test User with smUSD');
     
-    // Create a test user account
-    const testUser = new AptosAccount(new HexString('0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef').toUint8Array());
+    // Use ADMIN1 as test user (already funded and registered)
+    const testUser = new AptosAccount(new HexString(ADMIN1_PRIVATE_KEY).toUint8Array());
     const testUserAddress = testUser.address().hex();
     
-    logInfo(`Test user address: ${testUserAddress}`);
+    logInfo(`Test user address: ${testUserAddress} (using ADMIN1)`);
     
     try {
-      // Register test user for smUSD
-      const registerPayload = {
-        type: 'entry_function_payload',
-        function: `${CONTRACT_ADDRESS}::smusd::register`,
+      // Check if user has smUSD balance
+      const balanceResult = await client.view({
+        function: `${CONTRACT_ADDRESS}::smusd::balance_of`,
         type_arguments: [],
-        arguments: []
-      };
+        arguments: [testUserAddress]
+      });
       
-      const registerTxn = await client.generateTransaction(testUser.address(), registerPayload);
-      const signedRegisterTxn = await client.signTransaction(testUser, registerTxn);
-      const registerResult = await client.submitTransaction(signedRegisterTxn);
-      await client.waitForTransaction(registerResult.hash);
-      
-      logSuccess('Test user registered for smUSD');
-      
-      // Mint smUSD to test user
-      const mintPayload = {
-        type: 'entry_function_payload',
-        function: `${CONTRACT_ADDRESS}::smusd::mint`,
-        type_arguments: [],
-        arguments: [testUserAddress, '100000000000'] // 1000 smUSD
-      };
-      
-      const mintTxn = await client.generateTransaction(admin.address(), mintPayload);
-      const signedMintTxn = await client.signTransaction(admin, mintTxn);
-      const mintResult = await client.submitTransaction(signedMintTxn);
-      await client.waitForTransaction(mintResult.hash);
-      
-      logSuccess('Minted 1000 smUSD to test user');
+      const balance = parseInt(balanceResult[0]) / 100_000_000;
+      logSuccess(`Test user has ${balance.toLocaleString()} smUSD (ready for betting!)`);
       
       testResults.steps.push({
         step: 2,
         name: 'Setup Test User',
         status: 'passed',
         address: testUserAddress,
-        balance: '1000 smUSD'
+        balance: `${balance} smUSD`
       });
     } catch (error) {
-      logWarning(`Test user setup failed (may already be registered): ${error.message}`);
+      logWarning(`Could not check test user balance: ${error.message}`);
       testResults.summary.warnings++;
     }
     
