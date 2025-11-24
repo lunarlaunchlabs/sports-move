@@ -80,16 +80,16 @@ export class SportsBettingContract {
         function: `${CONTRACT_ADDRESS}::sports_betting::create_market`,
         type_arguments: [],
         arguments: [
-          market.id,              // game_id
-          market.sport_key,       // sport_key
-          market.sport_title,     // sport_title
-          market.home_team,       // home_team
-          market.away_team,       // away_team
-          commenceTime,           // commence_time
-          homeOdds,               // home_odds
-          awayOdds,               // away_odds
-          homeOddsIsNegative,     // home_odds_is_negative
-          awayOddsIsNegative      // away_odds_is_negative
+          market.id,                    // game_id
+          market.sport_key,             // sport_key
+          market.sport_title,           // sport_title
+          market.home_team,             // home_team
+          market.away_team,             // away_team
+          commenceTime.toString(),      // commence_time
+          homeOdds.toString(),          // home_odds
+          awayOdds.toString(),          // away_odds
+          homeOddsIsNegative,           // home_odds_is_negative
+          awayOddsIsNegative            // away_odds_is_negative
         ]
       };
 
@@ -144,11 +144,11 @@ export class SportsBettingContract {
         function: `${CONTRACT_ADDRESS}::sports_betting::update_market_odds`,
         type_arguments: [],
         arguments: [
-          market.id,              // game_id
-          homeOdds,               // home_odds
-          awayOdds,               // away_odds
-          homeOddsIsNegative,     // home_odds_is_negative
-          awayOddsIsNegative      // away_odds_is_negative
+          market.id,                // game_id
+          homeOdds.toString(),      // home_odds
+          awayOdds.toString(),      // away_odds
+          homeOddsIsNegative,       // home_odds_is_negative
+          awayOddsIsNegative        // away_odds_is_negative
         ]
       };
 
