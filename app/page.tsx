@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Image from "next/image";
+import { MarketData, ScoreData } from '@/app/types';
 
 export default function Home() {
-  const [markets, setMarkets] = useState<any>(null);
-  const [scores, setScores] = useState<any>(null);
+  const [markets, setMarkets] = useState<MarketData[] | null>(null);
+  const [scores, setScores] = useState<ScoreData[] | null>(null);
 
   useEffect(() => {
     fetch('/api/markets?sport=americanfootball_nfl')
