@@ -159,8 +159,9 @@ npm run wallet:pubkey       # Get public key from private key (pass key as arg)
 
 ### Testing
 ```bash
-npm run test:contracts      # Run sports betting integration tests
-npm run test:contract-api   # Run Movement API integration tests
+npm run test:contracts         # Run sports betting integration tests (mock)
+npm run test:contract-api      # Run Movement API integration tests
+npm run test:api-integration   # Run complete end-to-end API workflow test
 ```
 
 ### Full Setup (Sports Betting)
@@ -194,6 +195,18 @@ npm run wallet:pubkey 0xYOUR_PRIVATE_KEY_HERE
 ```bash
 npm run test:contracts
 # Tests complete betting flow with mocked blockchain
+```
+
+**Run complete API integration test:**
+```bash
+npm run dev  # Start dev server first
+npm run test:api-integration
+# Tests complete end-to-end workflow:
+# 1. Syncs markets to blockchain
+# 2. Places test bets
+# 3. Resolves markets and settles bets
+# 4. Queries all endpoints with all filter combinations
+# 5. Generates 17+ JSON files in test-results/ for verification
 ```
 
 ## 📊 Contract Information

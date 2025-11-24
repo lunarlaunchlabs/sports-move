@@ -17,6 +17,7 @@
     "wallet:pubkey": "node scripts/get-public-key.js",
     "test:contracts": "node test-sports-move-contracts.js",
     "test:contract-api": "node test-contract-api.js",
+    "test:api-integration": "node test-api-integration.js",
     "setup:full": "npm run wallet:generate && npm run wallet:fund && npm run contract:compile && npm run contract:deploy && npm run contract:init",
     "setup:init-only": "npm run contract:init && npm run wallet:register"
   },
