@@ -274,7 +274,7 @@ export class SportsBettingContract {
   static async getAllMarkets(): Promise<OnChainMarket[]> {
     try {
       const markets = await client.view({
-        function: `${CONTRACT_ADDRESS}::sports_betting::get_all_markets`,
+        function: `${CONTRACT_ADDRESS}::sports_betting::get_markets`,
         type_arguments: [],
         arguments: []
       });
