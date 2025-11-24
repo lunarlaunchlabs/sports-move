@@ -1,0 +1,47 @@
+name: Fund Gas Station
+
+on:
+  schedule:
+    # Run once a day at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    # Allow manual trigger from GitHub UI
+
+env:
+  GAS_STATION_WALLET: '0x9edd60f5ad0fc8e84c193ed011f536bfb8bd6ad12e3b6834aa1d24f5ffcdae97'
+
+jobs:
+  fund-gas-station:
+    name: Fund Gas Station
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fund Gas Station
+        run: node scripts/fund-gas-station.js ${{ env.GAS_STATION_WALLET }}
+
+      - name: Job Summary
+        if: always()
+        run: |
+          echo "## ⛽ Fund Gas Station Job" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Wallet:** ${{ env.GAS_STATION_WALLET }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Network:** Movement Testnet" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ **Status:** Completed successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi

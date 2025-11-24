@@ -1,0 +1,51 @@
+name: Rotate Markets Job
+
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    # Allow manual trigger from GitHub UI
+
+concurrency:
+  group: sports-move-markets
+  cancel-in-progress: false
+
+env:
+  PRODUCTION_URL: https://sports-move.vercel.app
+
+jobs:
+  rotate-markets:
+    name: Rotate Markets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Markets Job
+        run: node scripts/sports-move-job.js --job=markets
+        env:
+          PRODUCTION_URL: ${{ env.PRODUCTION_URL }}
+
+      - name: Job Summary
+        if: always()
+        run: |
+          echo "## 🏈 Markets Rotation Job" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target:** ${{ env.PRODUCTION_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Sports:** NFL, NBA, NHL, MLB" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ **Status:** Completed successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+

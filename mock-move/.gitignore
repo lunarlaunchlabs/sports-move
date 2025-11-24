@@ -1,0 +1,17 @@
+# Movement CLI configuration (contains private key!)
+.movement/
+.aptos/
+
+# Build artifacts
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

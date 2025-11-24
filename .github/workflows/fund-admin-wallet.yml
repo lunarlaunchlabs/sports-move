@@ -1,0 +1,48 @@
+name: Fund Admin Wallet
+
+on:
+  schedule:
+    # Run once a day at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    # Allow manual trigger from GitHub UI
+
+env:
+  ADMIN_WALLET: '0x5b27d6852a89b3099c15e728712bb2e20d2103664f8f462e4f1388ff255df150'
+
+jobs:
+  fund-wallet:
+    name: Fund Admin Wallet
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fund Admin Wallet
+        run: node scripts/fund-wallet.js ${{ env.ADMIN_WALLET }}
+
+      - name: Job Summary
+        if: always()
+        run: |
+          echo "## 💰 Fund Admin Wallet Job" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Wallet:** ${{ env.ADMIN_WALLET }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Network:** Movement Testnet" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ **Status:** Completed successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+

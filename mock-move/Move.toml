@@ -1,0 +1,16 @@
+[package]
+name = "mock_move"
+version = "1.0.0"
+authors = []
+
+[addresses]
+mock_move = "0x99b815740349fe620dfcc577e7cd0c6106f031e2c8cf1de5579de9a5b25b0a4c"
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "mainnet"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dev-dependencies]
