@@ -6,7 +6,6 @@ module sports_betting::sports_betting {
     use aptos_framework::timestamp;
     use aptos_framework::event;
     use aptos_framework::account;
-    use aptos_framework::resource_account;
     use sports_betting::smusd::{Self, SMUSD};
 
     /// Error codes
@@ -29,9 +28,15 @@ module sports_betting::sports_betting {
     struct Market has store, drop, copy {
         game_id: String,
         sport_key: String,
+        sport_title: String,
         home_team: String,
         away_team: String,
         commence_time: u64,
+        home_odds: u64,         // Absolute value of American odds
+        home_odds_positive: bool, // true if positive odds, false if negative
+        away_odds: u64,         // Absolute value of American odds
+        away_odds_positive: bool, // true if positive odds, false if negative
+        odds_last_update: u64,
         is_resolved: bool,
         is_cancelled: bool,
         winning_outcome: String,
@@ -44,7 +49,8 @@ module sports_betting::sports_betting {
         game_id: String,
         outcome: String,
         amount: u64,
-        odds: i64,
+        odds: u64,              // Absolute value of American odds
+        odds_positive: bool,    // true if positive odds, false if negative
         potential_payout: u64,
         is_settled: bool,
         timestamp: u64,
@@ -71,9 +77,14 @@ module sports_betting::sports_betting {
     struct MarketCreatedEvent has drop, store {
         game_id: String,
         sport_key: String,
+        sport_title: String,
         home_team: String,
         away_team: String,
         commence_time: u64,
+        home_odds: u64,
+        home_odds_positive: bool,
+        away_odds: u64,
+        away_odds_positive: bool,
     }
 
     struct BetPlacedEvent has drop, store {
@@ -82,7 +93,8 @@ module sports_betting::sports_betting {
         game_id: String,
         outcome: String,
         amount: u64,
-        odds: i64,
+        odds: u64,
+        odds_positive: bool,
         potential_payout: u64,
     }
 
@@ -180,15 +192,13 @@ module sports_betting::sports_betting {
     }
 
     /// Calculate payout based on American odds
-    fun calculate_payout(amount: u64, odds: i64): u64 {
-        if (odds > 0) {
+    fun calculate_payout(amount: u64, odds: u64, is_positive: bool): u64 {
+        if (is_positive) {
             // Positive odds: profit = amount * (odds / 100)
-            let odds_u64 = (odds as u64);
-            amount + (amount * odds_u64 / 100)
+            amount + (amount * odds / 100)
         } else {
-            // Negative odds: profit = amount * (100 / abs(odds))
-            let abs_odds = if (odds < 0) { ((-odds) as u64) } else { (odds as u64) };
-            amount + (amount * 100 / abs_odds)
+            // Negative odds: profit = amount * (100 / odds)
+            amount + (amount * 100 / odds)
         }
     }
 
@@ -197,19 +207,34 @@ module sports_betting::sports_betting {
         admin: &signer,
         game_id: String,
         sport_key: String,
+        sport_title: String,
         home_team: String,
         away_team: String,
-        commence_time: u64
+        commence_time: u64,
+        home_odds: u64,
+        home_odds_positive: bool,
+        away_odds: u64,
+        away_odds_positive: bool
     ) acquires BettingState {
         let state = borrow_global_mut<BettingState>(@sports_betting);
         assert_is_admin(signer::address_of(admin), state);
 
+        // Validate odds
+        assert!(home_odds != 0, EINVALID_ODDS);
+        assert!(away_odds != 0, EINVALID_ODDS);
+
         let market = Market {
             game_id: game_id,
             sport_key: sport_key,
+            sport_title: sport_title,
             home_team: home_team,
             away_team: away_team,
             commence_time,
+            home_odds,
+            home_odds_positive,
+            away_odds,
+            away_odds_positive,
+            odds_last_update: timestamp::now_seconds(),
             is_resolved: false,
             is_cancelled: false,
             winning_outcome: string::utf8(b""),
@@ -220,9 +245,14 @@ module sports_betting::sports_betting {
         event::emit_event(&mut state.market_created_events, MarketCreatedEvent {
             game_id: market.game_id,
             sport_key: market.sport_key,
+            sport_title: market.sport_title,
             home_team: market.home_team,
             away_team: market.away_team,
             commence_time: market.commence_time,
+            home_odds: market.home_odds,
+            home_odds_positive: market.home_odds_positive,
+            away_odds: market.away_odds,
+            away_odds_positive: market.away_odds_positive,
         });
     }
 
@@ -231,9 +261,14 @@ module sports_betting::sports_betting {
         admin: &signer,
         game_id: String,
         sport_key: String,
+        sport_title: String,
         home_team: String,
         away_team: String,
-        commence_time: u64
+        commence_time: u64,
+        home_odds: u64,
+        home_odds_positive: bool,
+        away_odds: u64,
+        away_odds_positive: bool
     ) acquires BettingState {
         let state = borrow_global_mut<BettingState>(@sports_betting);
         assert_is_admin(signer::address_of(admin), state);
@@ -244,10 +279,50 @@ module sports_betting::sports_betting {
         let market = vector::borrow_mut(&mut state.markets, index);
         assert!(!market.is_resolved, EMARKET_RESOLVED);
         
+        // Validate odds
+        assert!(home_odds != 0, EINVALID_ODDS);
+        assert!(away_odds != 0, EINVALID_ODDS);
+        
         market.sport_key = sport_key;
+        market.sport_title = sport_title;
         market.home_team = home_team;
         market.away_team = away_team;
         market.commence_time = commence_time;
+        market.home_odds = home_odds;
+        market.home_odds_positive = home_odds_positive;
+        market.away_odds = away_odds;
+        market.away_odds_positive = away_odds_positive;
+        market.odds_last_update = timestamp::now_seconds();
+    }
+
+    /// Admin: Update only the odds for a market (before resolution)
+    public entry fun update_market_odds(
+        admin: &signer,
+        game_id: String,
+        home_odds: u64,
+        home_odds_positive: bool,
+        away_odds: u64,
+        away_odds_positive: bool
+    ) acquires BettingState {
+        let state = borrow_global_mut<BettingState>(@sports_betting);
+        assert_is_admin(signer::address_of(admin), state);
+
+        let (found, index) = find_market_index(&game_id, state);
+        assert!(found, EMARKET_NOT_FOUND);
+
+        let market = vector::borrow_mut(&mut state.markets, index);
+        assert!(!market.is_resolved, EMARKET_RESOLVED);
+        assert!(!market.is_cancelled, EMARKET_CANCELLED);
+        
+        // Validate odds
+        assert!(home_odds != 0, EINVALID_ODDS);
+        assert!(away_odds != 0, EINVALID_ODDS);
+        
+        market.home_odds = home_odds;
+        market.home_odds_positive = home_odds_positive;
+        market.away_odds = away_odds;
+        market.away_odds_positive = away_odds_positive;
+        market.odds_last_update = timestamp::now_seconds();
     }
 
     /// Admin: Resolve a market with winning outcome
@@ -414,13 +489,12 @@ module sports_betting::sports_betting {
         user: &signer,
         game_id: String,
         outcome: String,
-        amount: u64,
-        odds: i64
+        amount: u64
     ) acquires BettingState {
         let state = borrow_global_mut<BettingState>(@sports_betting);
         let user_addr = signer::address_of(user);
 
-        // Validate market exists
+        // Validate market exists and get current odds
         let (found, index) = find_market_index(&game_id, state);
         assert!(found, EMARKET_NOT_FOUND);
 
@@ -428,18 +502,28 @@ module sports_betting::sports_betting {
         assert!(!market.is_resolved, EMARKET_RESOLVED);
         assert!(!market.is_cancelled, EMARKET_CANCELLED);
 
+        // Determine which odds to use based on outcome
+        // Outcome can be "home", "away", or the actual team name
+        let (odds, odds_positive) = if (outcome == string::utf8(b"home") || outcome == market.home_team) {
+            (market.home_odds, market.home_odds_positive)
+        } else if (outcome == string::utf8(b"away") || outcome == market.away_team) {
+            (market.away_odds, market.away_odds_positive)
+        } else {
+            abort EINVALID_ODDS
+        };
+
         // Validate odds
         assert!(odds != 0, EINVALID_ODDS);
 
-        // Calculate potential payout
-        let potential_payout = calculate_payout(amount, odds);
+        // Calculate potential payout using current market odds
+        let potential_payout = calculate_payout(amount, odds, odds_positive);
 
         // Transfer smUSD from user to contract (escrow)
         let resource_addr = account::get_signer_capability_address(&state.signer_cap);
         let coins = coin::withdraw<SMUSD>(user, amount);
         coin::deposit(resource_addr, coins);
 
-        // Create bet record
+        // Create bet record with captured odds
         let bet = Bet {
             bet_id: state.next_bet_id,
             user: user_addr,
@@ -447,6 +531,7 @@ module sports_betting::sports_betting {
             outcome,
             amount,
             odds,
+            odds_positive,
             potential_payout,
             is_settled: false,
             timestamp: timestamp::now_seconds(),
@@ -462,6 +547,7 @@ module sports_betting::sports_betting {
             outcome: bet.outcome,
             amount: bet.amount,
             odds: bet.odds,
+            odds_positive: bet.odds_positive,
             potential_payout: bet.potential_payout,
         });
     }
@@ -514,8 +600,8 @@ module sports_betting::sports_betting {
     }
 
     #[view]
-    public fun calculate_payout_view(amount: u64, odds: i64): u64 {
-        calculate_payout(amount, odds)
+    public fun calculate_payout_view(amount: u64, odds: u64, is_positive: bool): u64 {
+        calculate_payout(amount, odds, is_positive)
     }
 
     #[view]

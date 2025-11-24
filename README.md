@@ -120,7 +120,7 @@ npm run dev
 
 ```bash
 # Run automated integration tests
-node test-contract-api.js
+npm run test:contract-api
 ```
 
 **Expected Output:**
@@ -129,6 +129,71 @@ node test-contract-api.js
 ✅ POST request successful!
 ✅ GET request successful!
 🎉 All tests passed!
+```
+
+## 📜 Available NPM Scripts
+
+### Development
+```bash
+npm run dev          # Start Next.js development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+```
+
+### Smart Contract Management
+```bash
+npm run contract:compile    # Compile Move contracts
+npm run contract:test       # Run Move contract tests
+npm run contract:deploy     # Deploy contracts to Movement Network
+npm run contract:init       # Initialize deployed contracts
+```
+
+### Wallet Management
+```bash
+npm run wallet:generate     # Generate 4 oracle admin wallets
+npm run wallet:fund         # Fund all admin wallets from faucet
+npm run wallet:register     # Register remaining admins for smUSD
+npm run wallet:pubkey       # Get public key from private key (pass key as arg)
+```
+
+### Testing
+```bash
+npm run test:contracts      # Run sports betting integration tests
+npm run test:contract-api   # Run Movement API integration tests
+```
+
+### Full Setup (Sports Betting)
+```bash
+npm run setup:full          # Complete setup: generate wallets → fund → compile → deploy → initialize
+npm run setup:init-only     # Initialize contracts and register admins (after manual deployment)
+```
+
+### Usage Examples
+
+**Generate new wallets:**
+```bash
+npm run wallet:generate
+# Creates 4 admin wallets and stores in .env
+```
+
+**Deploy sports betting contracts:**
+```bash
+npm run contract:compile    # First compile
+npm run contract:deploy     # Then deploy
+npm run contract:init       # Finally initialize
+```
+
+**Get public key from private key:**
+```bash
+npm run wallet:pubkey 0xYOUR_PRIVATE_KEY_HERE
+# Outputs: ed25519-pub-0x...
+```
+
+**Run full integration test:**
+```bash
+npm run test:contracts
+# Tests complete betting flow with mocked blockchain
 ```
 
 ## 📊 Contract Information

@@ -191,14 +191,18 @@ async function testSportsBettingInit() {
 async function testMarketCreation() {
   logSection('STEP 4: Market Creation');
   
-  logInfo('Admin 1 creating betting market...');
+  logInfo('Admin 1 creating betting market with FanDuel odds...');
   
   const market1 = {
     game_id: 'game_001_49ers_vs_cowboys',
     sport_key: 'americanfootball_nfl',
+    sport_title: 'NFL',
     home_team: 'San Francisco 49ers',
     away_team: 'Dallas Cowboys',
     commence_time: Math.floor(Date.now() / 1000) + 86400,
+    home_odds: 150, // +150 for 49ers
+    away_odds: -180, // -180 for Cowboys
+    odds_last_update: Math.floor(Date.now() / 1000),
     is_resolved: false,
     is_cancelled: false,
     winning_outcome: '',
@@ -212,9 +216,13 @@ async function testMarketCreation() {
   const market2 = {
     game_id: 'game_002_lions_vs_packers',
     sport_key: 'americanfootball_nfl',
+    sport_title: 'NFL',
     home_team: 'Detroit Lions',
     away_team: 'Green Bay Packers',
     commence_time: Math.floor(Date.now() / 1000) + 90000,
+    home_odds: -152, // -152 for Lions
+    away_odds: 128, // +128 for Packers
+    odds_last_update: Math.floor(Date.now() / 1000),
     is_resolved: false,
     is_cancelled: false,
     winning_outcome: '',
@@ -228,7 +236,7 @@ async function testMarketCreation() {
   state.betting.markets.forEach((m, i) => {
     logData(`Market ${i + 1}`, {
       game_id: m.game_id,
-      matchup: `${m.home_team} vs ${m.away_team}`,
+      matchup: `${m.home_team} (${m.home_odds > 0 ? '+' : ''}${m.home_odds}) vs ${m.away_team} (${m.away_odds > 0 ? '+' : ''}${m.away_odds})`,
       status: 'OPEN',
     });
   });
@@ -238,11 +246,14 @@ async function testBetting() {
   logSection('STEP 5: Placing Bets');
   
   const gameId = state.betting.markets[0].game_id;
+  const market = state.betting.markets[0];
   
-  logInfo('User 1 placing bet on San Francisco 49ers...');
+  logInfo('User 1 placing bet on San Francisco 49ers (home team)...');
   const bet1Amount = 10_000_000_000; // 100 smUSD
-  const bet1Odds = 150; // +150
+  const bet1Odds = market.home_odds; // Get odds from market: +150
   const bet1Payout = calculatePayout(bet1Amount, bet1Odds);
+  
+  logInfo(`Current market odds - Home: ${bet1Odds > 0 ? '+' : ''}${bet1Odds}, Away: ${market.away_odds > 0 ? '+' : ''}${market.away_odds}`);
   
   const bet1 = {
     bet_id: state.betting.nextBetId++,
@@ -260,18 +271,18 @@ async function testBetting() {
   transferSmUSD(USER1, 'ESCROW', bet1Amount);
   state.betting.bets.push(bet1);
   
-  logSuccess(`Bet placed: ${formatSmUSD(bet1Amount)} smUSD at +${bet1Odds} odds`);
+  logSuccess(`Bet placed: ${formatSmUSD(bet1Amount)} smUSD at ${bet1Odds > 0 ? '+' : ''}${bet1Odds} odds`);
   logData('Bet Details', {
     bet_id: bet1.bet_id,
     amount: `${formatSmUSD(bet1Amount)} smUSD`,
-    odds: `+${bet1Odds}`,
+    odds: `${bet1Odds > 0 ? '+' : ''}${bet1Odds}`,
     potential_payout: `${formatSmUSD(bet1Payout)} smUSD`,
     potential_profit: `${formatSmUSD(bet1Payout - bet1Amount)} smUSD`,
   });
   
-  logInfo('\nUser 2 placing bet on Dallas Cowboys...');
+  logInfo('\nUser 2 placing bet on Dallas Cowboys (away team)...');
   const bet2Amount = 5_000_000_000; // 50 smUSD
-  const bet2Odds = -200; // -200
+  const bet2Odds = market.away_odds; // Get odds from market: -180
   const bet2Payout = calculatePayout(bet2Amount, bet2Odds);
   
   const bet2 = {
@@ -289,11 +300,11 @@ async function testBetting() {
   transferSmUSD(USER2, 'ESCROW', bet2Amount);
   state.betting.bets.push(bet2);
   
-  logSuccess(`Bet placed: ${formatSmUSD(bet2Amount)} smUSD at ${bet2Odds} odds`);
+  logSuccess(`Bet placed: ${formatSmUSD(bet2Amount)} smUSD at ${bet2Odds > 0 ? '+' : ''}${bet2Odds} odds`);
   logData('Bet Details', {
     bet_id: bet2.bet_id,
     amount: `${formatSmUSD(bet2Amount)} smUSD`,
-    odds: bet2Odds,
+    odds: `${bet2Odds > 0 ? '+' : ''}${bet2Odds}`,
     potential_payout: `${formatSmUSD(bet2Payout)} smUSD`,
     potential_profit: `${formatSmUSD(bet2Payout - bet2Amount)} smUSD`,
   });
@@ -390,17 +401,19 @@ async function testCancellation() {
   logSection('STEP 7: Market Cancellation & Refunds');
   
   const gameId = state.betting.markets[1].game_id;
+  const market = state.betting.markets[1];
   
-  logInfo('User 1 placing bet on Detroit Lions...');
+  logInfo('User 1 placing bet on Detroit Lions (home team)...');
   const betAmount = 5_000_000_000; // 50 smUSD
+  const betOdds = market.home_odds; // Get odds from market
   const bet = {
     bet_id: state.betting.nextBetId++,
     user: USER1,
     game_id: gameId,
     outcome: 'Detroit Lions',
     amount: betAmount,
-    odds: 120,
-    potential_payout: calculatePayout(betAmount, 120),
+    odds: betOdds,
+    potential_payout: calculatePayout(betAmount, betOdds),
     is_settled: false,
     timestamp: Math.floor(Date.now() / 1000),
   };
@@ -414,8 +427,8 @@ async function testCancellation() {
   logData('User 1 Balance After Bet', `${formatSmUSD(getBalance(USER1))} smUSD`);
   
   logWarning('\nGame postponed! Admin cancelling market...');
-  const market = state.betting.markets.find(m => m.game_id === gameId);
-  market.is_cancelled = true;
+  const marketToCancel = state.betting.markets.find(m => m.game_id === gameId);
+  marketToCancel.is_cancelled = true;
   
   // Process refunds
   const cancelledBets = state.betting.bets.filter(b => b.game_id === gameId && !b.is_settled);

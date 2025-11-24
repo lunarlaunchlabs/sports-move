@@ -142,7 +142,7 @@ module sports_betting::sports_betting_tests {
         
         // Test positive odds: +200
         // $100 bet at +200 should return $300 ($100 stake + $200 profit)
-        let payout = sports_betting::calculate_payout_view(10000000000, 200);
+        let payout = sports_betting::calculate_payout_view(10000000000, 200, true);
         assert!(payout == 30000000000, 0);
     }
 
@@ -158,7 +158,7 @@ module sports_betting::sports_betting_tests {
         
         // Test negative odds: -200
         // $100 bet at -200 should return $150 ($100 stake + $50 profit)
-        let payout = sports_betting::calculate_payout_view(10000000000, -200);
+        let payout = sports_betting::calculate_payout_view(10000000000, 200, false);
         assert!(payout == 15000000000, 0);
     }
 

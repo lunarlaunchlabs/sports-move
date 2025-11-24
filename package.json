@@ -6,7 +6,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "contract:compile": "cd move && movement move compile",
+    "contract:test": "cd move && movement move test",
+    "contract:deploy": "cd move && movement move publish --assume-yes --included-artifacts none",
+    "contract:init": "node scripts/initialize-contracts.js",
+    "wallet:generate": "node scripts/generate-admin-wallets.js",
+    "wallet:fund": "node scripts/fund-wallets.js",
+    "wallet:register": "node scripts/register-remaining-admins.js",
+    "wallet:pubkey": "node scripts/get-public-key.js",
+    "test:contracts": "node test-sports-move-contracts.js",
+    "test:contract-api": "node test-contract-api.js",
+    "setup:full": "npm run wallet:generate && npm run wallet:fund && npm run contract:compile && npm run contract:deploy && npm run contract:init",
+    "setup:init-only": "npm run contract:init && npm run wallet:register"
   },
   "dependencies": {
     "aptos": "^1.22.1",

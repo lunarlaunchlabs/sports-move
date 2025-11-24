@@ -14,12 +14,12 @@ const path = require('path');
 
 console.log('🚀 Deploying Sports Betting Contracts...\n');
 
-// Check if Aptos CLI is installed
+// Check if Movement CLI is installed
 try {
-  execSync('aptos --version', { stdio: 'pipe' });
+  execSync('movement --version', { stdio: 'pipe' });
 } catch (error) {
-  console.error('❌ Aptos CLI not found!');
-  console.error('Install with: curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3');
+  console.error('❌ Movement CLI not found!');
+  console.error('Install Movement CLI first');
   process.exit(1);
 }
 
@@ -48,7 +48,7 @@ console.log('✅ Move.toml updated\n');
 // Compile contracts
 console.log('🔨 Compiling contracts...');
 try {
-  execSync('cd move && aptos move compile', { stdio: 'inherit' });
+  execSync('cd move && movement move compile', { stdio: 'inherit' });
   console.log('✅ Contracts compiled\n');
 } catch (error) {
   console.error('❌ Compilation failed');
@@ -60,7 +60,7 @@ console.log('📦 Publishing contracts to blockchain...');
 console.log('(This may take a minute...)\n');
 
 try {
-  const deployCmd = `cd move && aptos move publish \
+  const deployCmd = `cd move && movement move publish \
     --private-key ${DEPLOYER_PRIVATE_KEY} \
     --named-addresses sports_betting=${DEPLOYER_ADDRESS} \
     --assume-yes`;
