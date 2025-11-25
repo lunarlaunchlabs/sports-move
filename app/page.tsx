@@ -57,6 +57,7 @@ export default function SportsBook() {
   // Fetch markets
   const fetchMarkets = async () => {
     try {
+      console.log("Fetching Markets...")
       const response = await fetch(`/api/get-markets?filter=${marketFilter}`);
       const data = await response.json();
       setMarkets(data.markets || []);
@@ -70,6 +71,7 @@ export default function SportsBook() {
     if (!walletAddress) return;
     
     try {
+      console.log("Fetching User Bets...")
       const response = await fetch(`/api/get-user-bets?address=${walletAddress}&filter=${betFilter}`);
       const data = await response.json();
       setUserBets(data.bets || []);
