@@ -52,7 +52,7 @@ interface Bet {
   outcome: string;
   amount: string;
   odds: string;
-  odds_is_negative: boolean;
+  odds_positive: boolean; // true = positive odds (+), false = negative odds (-)
   potential_payout: string;
   is_settled: boolean;
   timestamp: string;
@@ -952,8 +952,8 @@ function MyBetsSection({
     });
   };
 
-  const formatBetOdds = (odds: string, isNegative: boolean) => {
-    return isNegative ? `-${odds}` : `+${odds}`;
+  const formatBetOdds = (odds: string, isPositive: boolean) => {
+    return isPositive ? `+${odds}` : `-${odds}`;
   };
 
   const formatBetDate = (timestamp: string) => {
@@ -1088,8 +1088,8 @@ function MyBetsSection({
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
                   <p className="text-zinc-400 text-xs mb-1">Odds</p>
-                  <p className={`font-bold ${!bet.odds_is_negative ? 'text-green-400' : 'text-white'}`}>
-                    {formatBetOdds(bet.odds, bet.odds_is_negative)}
+                  <p className={`font-bold ${bet.odds_positive ? 'text-green-400' : 'text-white'}`}>
+                    {formatBetOdds(bet.odds, bet.odds_positive)}
                   </p>
                 </div>
                 <div>
@@ -1134,8 +1134,8 @@ function MyBetsSection({
                   <tr key={bet.bet_id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
                     <td className="px-4 py-3 text-zinc-500 text-sm">#{bet.bet_id}</td>
                     <td className="px-4 py-3 text-white font-medium">{bet.outcome}</td>
-                    <td className={`px-4 py-3 font-bold ${!bet.odds_is_negative ? 'text-green-400' : 'text-white'}`}>
-                      {formatBetOdds(bet.odds, bet.odds_is_negative)}
+                    <td className={`px-4 py-3 font-bold ${bet.odds_positive ? 'text-green-400' : 'text-white'}`}>
+                      {formatBetOdds(bet.odds, bet.odds_positive)}
                     </td>
                     <td className="px-4 py-3 text-white text-right">{formatBetAmount(bet.amount)}</td>
                     <td className="px-4 py-3 text-green-400 font-medium text-right">{formatBetAmount(bet.potential_payout)}</td>

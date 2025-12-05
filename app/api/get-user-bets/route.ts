@@ -13,7 +13,7 @@ interface Bet {
   outcome: string;
   amount: string;
   odds: string;
-  odds_is_negative: boolean;
+  odds_positive: boolean; // true = positive odds (+), false = negative odds (-)
   potential_payout: string;
   is_settled: boolean;
   timestamp: string;
