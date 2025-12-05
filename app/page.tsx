@@ -37,6 +37,7 @@ interface Market {
 
 type MarketFilter = 'all' | 'active' | 'resolved' | 'cancelled';
 type SportFilter = 'all' | 'nfl' | 'nhl' | 'mlb' | 'nba';
+type DateSort = 'soonest' | 'latest';
 
 interface BetSelection {
   market: Market;
@@ -84,6 +85,11 @@ const sportTabs: { key: SportFilter; label: string }[] = [
   { key: 'nhl', label: 'NHL' },
   { key: 'mlb', label: 'MLB' },
   { key: 'nba', label: 'NBA' },
+];
+
+const dateSortOptions: { key: DateSort; label: string }[] = [
+  { key: 'soonest', label: 'Soonest First' },
+  { key: 'latest', label: 'Latest First' },
 ];
 
 interface NavBarProps {
@@ -1549,6 +1555,7 @@ export default function SportsBook() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedSport, setSelectedSport] = useState<SportFilter>('all');
   const [marketFilter, setMarketFilter] = useState<MarketFilter>('active');
+  const [dateSort, setDateSort] = useState<DateSort>('soonest');
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -1730,9 +1737,16 @@ export default function SportsBook() {
     setCurrentPage(1);
   }, [marketFilter, selectedSport]);
 
+  // Sort markets by date
+  const sortedMarkets = [...markets].sort((a, b) => {
+    const dateA = parseInt(a.commence_time);
+    const dateB = parseInt(b.commence_time);
+    return dateSort === 'soonest' ? dateA - dateB : dateB - dateA;
+  });
+
   // Pagination calculations
-  const totalPages = Math.ceil(markets.length / MARKETS_PER_PAGE);
-  const paginatedMarkets = markets.slice(
+  const totalPages = Math.ceil(sortedMarkets.length / MARKETS_PER_PAGE);
+  const paginatedMarkets = sortedMarkets.slice(
     (currentPage - 1) * MARKETS_PER_PAGE,
     currentPage * MARKETS_PER_PAGE
   );
@@ -1803,6 +1817,26 @@ export default function SportsBook() {
                     }`}
                   >
                     {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Date Sort Filter */}
+            <div className="flex items-center gap-3 mb-6">
+              <label className="text-zinc-400 text-sm">Sort by Date:</label>
+              <div className="flex gap-2">
+                {dateSortOptions.map((option) => (
+                  <button
+                    key={option.key}
+                    onClick={() => setDateSort(option.key)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      dateSort === option.key
+                        ? 'bg-[#F5B400] text-black'
+                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                    }`}
+                  >
+                    {option.label}
                   </button>
                 ))}
               </div>
