@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 /**
@@ -8,6 +8,44 @@ import Image from 'next/image';
  * Highlight Color (Logo Text Color): #F5B400
  * Text Color: #FFFFFF
  */
+
+// Types
+interface Market {
+  game_id: string;
+  sport_key: string;
+  sport_title: string;
+  home_team: string;
+  away_team: string;
+  commence_time: string;
+  home_odds: string;
+  away_odds: string;
+  home_odds_positive: boolean;
+  away_odds_positive: boolean;
+  odds_last_update: string;
+  is_resolved: boolean;
+  is_cancelled: boolean;
+  winning_outcome: string;
+}
+
+type MarketFilter = 'all' | 'active' | 'resolved' | 'cancelled';
+type SportFilter = 'all' | 'nfl' | 'nhl' | 'mlb' | 'nba';
+
+const MARKETS_PER_PAGE = 10;
+
+const marketFilterTabs: { key: MarketFilter; label: string }[] = [
+  { key: 'active', label: 'Active' },
+  { key: 'all', label: 'All' },
+  { key: 'resolved', label: 'Resolved' },
+  { key: 'cancelled', label: 'Cancelled' },
+];
+
+const sportTabs: { key: SportFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'nfl', label: 'NFL' },
+  { key: 'nhl', label: 'NHL' },
+  { key: 'mlb', label: 'MLB' },
+  { key: 'nba', label: 'NBA' },
+];
 
 interface NavBarProps {
   isMobileMenuOpen: boolean;
@@ -122,19 +160,256 @@ function NavBar({ isMobileMenuOpen, setIsMobileMenuOpen }: NavBarProps) {
   );
 }
 
-type SportFilter = 'all' | 'nfl' | 'nhl' | 'mlb' | 'nba';
+// Helper functions
+function formatOdds(odds: string, isPositive: boolean): string {
+  return isPositive ? `+${odds}` : `-${odds}`;
+}
 
-const sportTabs: { key: SportFilter; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'nfl', label: 'NFL' },
-  { key: 'nhl', label: 'NHL' },
-  { key: 'mlb', label: 'MLB' },
-  { key: 'nba', label: 'NBA' },
-];
+function formatDate(timestamp: string): string {
+  const date = new Date(parseInt(timestamp) * 1000);
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function getSportColor(sportKey: string): string {
+  const key = sportKey.toLowerCase();
+  if (key.includes('football') || key.includes('nfl')) return '#013369';
+  if (key.includes('basketball') || key.includes('nba')) return '#C9082A';
+  if (key.includes('hockey') || key.includes('nhl')) return '#000000';
+  if (key.includes('baseball') || key.includes('mlb')) return '#002D72';
+  return '#F5B400';
+}
+
+// MarketCard Component
+interface MarketCardProps {
+  market: Market;
+}
+
+function MarketCard({ market }: MarketCardProps) {
+  const sportColor = getSportColor(market.sport_key);
+  const isLive = !market.is_resolved && !market.is_cancelled;
+
+  return (
+    <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden hover:border-zinc-700 transition-colors duration-200">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span
+            className="text-xs font-bold px-2 py-1 rounded"
+            style={{ backgroundColor: sportColor, color: '#fff' }}
+          >
+            {market.sport_title}
+          </span>
+          <span className="text-zinc-400 text-sm">
+            {formatDate(market.commence_time)}
+          </span>
+        </div>
+        {market.is_resolved && (
+          <span className="text-xs font-medium px-2 py-1 rounded bg-green-600 text-white">
+            Final: {market.winning_outcome}
+          </span>
+        )}
+        {market.is_cancelled && (
+          <span className="text-xs font-medium px-2 py-1 rounded bg-red-600 text-white">
+            Cancelled
+          </span>
+        )}
+        {isLive && (
+          <span className="text-xs font-medium px-2 py-1 rounded bg-[#F5B400] text-black">
+            Open
+          </span>
+        )}
+      </div>
+
+      {/* Teams & Odds */}
+      <div className="p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Away Team */}
+          <button
+            disabled={!isLive}
+            className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${
+              isLive
+                ? 'border-zinc-700 hover:border-[#F5B400] hover:bg-zinc-800 cursor-pointer'
+                : 'border-zinc-800 opacity-60 cursor-not-allowed'
+            }`}
+          >
+            <span className="font-medium text-white">{market.away_team}</span>
+            <span
+              className={`font-bold text-lg ${
+                market.away_odds_positive ? 'text-green-400' : 'text-white'
+              }`}
+            >
+              {formatOdds(market.away_odds, market.away_odds_positive)}
+            </span>
+          </button>
+
+          {/* Home Team */}
+          <button
+            disabled={!isLive}
+            className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${
+              isLive
+                ? 'border-zinc-700 hover:border-[#F5B400] hover:bg-zinc-800 cursor-pointer'
+                : 'border-zinc-800 opacity-60 cursor-not-allowed'
+            }`}
+          >
+            <span className="font-medium text-white">{market.home_team}</span>
+            <span
+              className={`font-bold text-lg ${
+                market.home_odds_positive ? 'text-green-400' : 'text-white'
+              }`}
+            >
+              {formatOdds(market.home_odds, market.home_odds_positive)}
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Loading Skeleton
+function MarketCardSkeleton() {
+  return (
+    <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden animate-pulse">
+      <div className="px-4 py-3 border-b border-zinc-800 flex items-center gap-3">
+        <div className="h-6 w-16 bg-zinc-800 rounded" />
+        <div className="h-4 w-32 bg-zinc-800 rounded" />
+      </div>
+      <div className="p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="h-14 bg-zinc-800 rounded-lg" />
+          <div className="h-14 bg-zinc-800 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Pagination Component
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}
+
+function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
+  if (totalPages <= 1) return null;
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    return pages;
+  };
+
+  return (
+    <div className="flex items-center justify-center gap-2 mt-6">
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="px-3 py-2 rounded-lg bg-zinc-800 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-700 transition-colors"
+      >
+        Previous
+      </button>
+
+      <div className="flex items-center gap-1">
+        {getPageNumbers().map((page, idx) =>
+          typeof page === 'number' ? (
+            <button
+              key={idx}
+              onClick={() => onPageChange(page)}
+              className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                currentPage === page
+                  ? 'bg-[#F5B400] text-black'
+                  : 'bg-zinc-800 text-white hover:bg-zinc-700'
+              }`}
+            >
+              {page}
+            </button>
+          ) : (
+            <span key={idx} className="px-2 text-zinc-500">
+              {page}
+            </span>
+          )
+        )}
+      </div>
+
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="px-3 py-2 rounded-lg bg-zinc-800 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-700 transition-colors"
+      >
+        Next
+      </button>
+    </div>
+  );
+}
 
 export default function SportsBook() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedSport, setSelectedSport] = useState<SportFilter>('all');
+  const [marketFilter, setMarketFilter] = useState<MarketFilter>('active');
+  const [markets, setMarkets] = useState<Market[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Fetch markets
+  const fetchMarkets = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/get-markets?filter=${marketFilter}`);
+      const data = await response.json();
+      setMarkets(data.markets || []);
+    } catch (error) {
+      console.error('Failed to fetch markets:', error);
+      setMarkets([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch markets when filter changes
+  useEffect(() => {
+    fetchMarkets();
+    setCurrentPage(1);
+  }, [marketFilter]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(markets.length / MARKETS_PER_PAGE);
+  const paginatedMarkets = markets.slice(
+    (currentPage - 1) * MARKETS_PER_PAGE,
+    currentPage * MARKETS_PER_PAGE
+  );
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to markets section
+    document.getElementById('markets')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <div className="min-h-screen bg-black">
@@ -161,36 +436,90 @@ export default function SportsBook() {
             </button>
           </section>
 
-          {/* Content Placeholder */}
+          {/* Markets Section */}
           <section id="markets" className="py-8">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4">
-              Available Markets
-            </h2>
-
-            {/* Sport Filter Tabs */}
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-1 px-1">
-              {sportTabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setSelectedSport(tab.key)}
-                  className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${
-                    selectedSport === tab.key
-                      ? 'bg-[#F5B400] text-black'
-                      : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b border-zinc-800 pb-4">
+              <h2 className="text-2xl sm:text-3xl font-bold">
+                Available Markets
+              </h2>
+              <div className="text-sm text-zinc-400">
+                {!loading && `${markets.length} market${markets.length !== 1 ? 's' : ''} found`}
+              </div>
             </div>
 
-            <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
-              <p className="text-zinc-400">
-                {selectedSport === 'all'
-                  ? 'Showing all markets...'
-                  : `Showing ${selectedSport.toUpperCase()} markets...`}
-              </p>
+            {/* Filter Tabs Row */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              {/* Market Status Filter */}
+              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+                {marketFilterTabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setMarketFilter(tab.key)}
+                    className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${
+                      marketFilter === tab.key
+                        ? 'bg-[#F5B400] text-black'
+                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Sport Filter */}
+              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 sm:ml-auto">
+                {sportTabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setSelectedSport(tab.key)}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                      selectedSport === tab.key
+                        ? 'bg-zinc-700 text-white'
+                        : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* Markets List */}
+            <div className="space-y-4">
+              {loading ? (
+                // Loading skeletons
+                <>
+                  {[...Array(3)].map((_, i) => (
+                    <MarketCardSkeleton key={i} />
+                  ))}
+                </>
+              ) : paginatedMarkets.length === 0 ? (
+                // Empty state
+                <div className="bg-zinc-900 rounded-xl p-12 border border-zinc-800 text-center">
+                  <div className="text-4xl mb-4">🏟️</div>
+                  <h3 className="text-xl font-semibold mb-2">No Markets Found</h3>
+                  <p className="text-zinc-400">
+                    {marketFilter === 'active'
+                      ? 'There are no active markets at the moment. Check back later!'
+                      : `No ${marketFilter} markets to display.`}
+                  </p>
+                </div>
+              ) : (
+                // Market cards
+                paginatedMarkets.map((market) => (
+                  <MarketCard key={market.game_id} market={market} />
+                ))
+              )}
+            </div>
+
+            {/* Pagination */}
+            {!loading && markets.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            )}
           </section>
 
           <section id="my-bets" className="py-8">
