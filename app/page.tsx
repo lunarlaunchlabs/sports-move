@@ -105,6 +105,7 @@ function NavBar({
   const navLinks = [
     { label: 'Markets', href: '#markets' },
     { label: 'My Bets', href: '#my-bets' },
+    { label: 'Faucet', href: '#faucet' },
     { label: 'How It Works', href: '#how-it-works' },
   ];
 
@@ -1163,6 +1164,386 @@ function MyBetsSection({
   );
 }
 
+// Faucet Section Component
+interface FaucetSectionProps {
+  isConnected: boolean;
+  walletAddress: string | null;
+  onConnect: () => void;
+  onBalanceUpdate: () => void;
+  signAndSubmitTransaction: (payload: any) => Promise<any>;
+}
+
+function FaucetSection({ isConnected, walletAddress, onConnect, onBalanceUpdate, signAndSubmitTransaction }: FaucetSectionProps) {
+  const [mintAmount, setMintAmount] = useState<string>('100');
+  const [isMinting, setIsMinting] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [isRegistered, setIsRegistered] = useState<boolean | null>(null);
+  const [mintResult, setMintResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Check if user is registered for smUSD
+  const checkRegistration = useCallback(async () => {
+    if (!walletAddress) {
+      setIsRegistered(null);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${NODE_URL}/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          function: `${CONTRACT_ADDRESS}::smusd::is_registered`,
+          type_arguments: [],
+          arguments: [walletAddress]
+        })
+      });
+      
+      const data = await response.json();
+      setIsRegistered(data && data[0] === true);
+    } catch (error) {
+      console.error('Failed to check registration:', error);
+      setIsRegistered(false);
+    }
+  }, [walletAddress]);
+
+  // Check registration status when wallet connects
+  useEffect(() => {
+    if (isConnected && walletAddress) {
+      checkRegistration();
+    } else {
+      setIsRegistered(null);
+    }
+  }, [isConnected, walletAddress, checkRegistration]);
+
+  // Handle registering for smUSD (user must sign this transaction)
+  const handleRegister = async () => {
+    if (!walletAddress) return;
+
+    setIsRegistering(true);
+    setMintResult(null);
+
+    try {
+      const payload = {
+        data: {
+          function: `${CONTRACT_ADDRESS}::smusd::register` as const,
+          typeArguments: [],
+          functionArguments: [],
+        },
+      };
+
+      await signAndSubmitTransaction(payload);
+      
+      // Wait for transaction to process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      setIsRegistered(true);
+      setMintResult({ success: true, message: 'Successfully registered for smUSD! You can now mint tokens.' });
+    } catch (error: any) {
+      console.error('Register error:', error);
+      setMintResult({ success: false, message: error.message || 'Failed to register. Please try again.' });
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  const handleMint = async () => {
+    if (!walletAddress || !mintAmount) return;
+
+    const amount = parseFloat(mintAmount);
+    if (isNaN(amount) || amount <= 0) {
+      setMintResult({ success: false, message: 'Please enter a valid amount' });
+      return;
+    }
+
+    if (amount > 1000) {
+      setMintResult({ success: false, message: 'Maximum mint amount is 1000 smUSD' });
+      return;
+    }
+
+    setIsMinting(true);
+    setMintResult(null);
+
+    try {
+      const response = await fetch('/api/mint-smusd', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address: walletAddress,
+          amount: amount,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMintResult({ success: true, message: `Successfully minted ${amount} smUSD!` });
+        // Refresh balance after a short delay
+        setTimeout(() => {
+          onBalanceUpdate();
+        }, 2000);
+      } else {
+        setMintResult({ success: false, message: data.error || 'Failed to mint smUSD' });
+      }
+    } catch (error) {
+      console.error('Mint error:', error);
+      setMintResult({ success: false, message: 'Network error. Please try again.' });
+    } finally {
+      setIsMinting(false);
+    }
+  };
+
+  const handleAmountChange = (value: string) => {
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setMintAmount(value);
+      setMintResult(null);
+    }
+  };
+
+  const presetAmounts = [50, 100, 250, 500, 1000];
+
+  return (
+    <section id="faucet" className="py-8">
+      <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4">
+        smUSD Faucet
+      </h2>
+      
+      <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 overflow-hidden">
+        <div className="p-6 sm:p-8">
+          {/* Header */}
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-[#F5B400]/10 flex items-center justify-center shrink-0">
+              <span className="text-2xl">💧</span>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-white mb-1">Testnet Faucet</h3>
+              <p className="text-zinc-400 text-sm">
+                Get free smUSD tokens to test the platform. Maximum 1,000 smUSD per request.
+              </p>
+            </div>
+          </div>
+
+          {!isConnected ? (
+            // Not connected state
+            <div className="text-center py-8">
+              <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <p className="text-zinc-400 mb-4">Connect your wallet to receive testnet tokens</p>
+              <button
+                onClick={onConnect}
+                className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-6 py-3 rounded-lg transition-colors duration-200"
+              >
+                Connect Wallet
+              </button>
+            </div>
+          ) : isRegistered === null ? (
+            // Loading registration status
+            <div className="text-center py-8">
+              <div className="animate-spin h-8 w-8 border-4 border-[#F5B400] border-t-transparent rounded-full mx-auto mb-4" />
+              <p className="text-zinc-400">Checking registration status...</p>
+            </div>
+          ) : !isRegistered ? (
+            // Not registered - show registration step
+            <div className="space-y-6">
+              {/* Step indicator */}
+              <div className="flex items-center gap-4 mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-[#F5B400] text-black font-bold flex items-center justify-center text-sm">1</div>
+                  <span className="text-white font-medium">Register</span>
+                </div>
+                <div className="flex-1 h-px bg-zinc-700" />
+                <div className="flex items-center gap-2 opacity-50">
+                  <div className="w-8 h-8 rounded-full bg-zinc-700 text-zinc-400 font-bold flex items-center justify-center text-sm">2</div>
+                  <span className="text-zinc-400 font-medium">Mint</span>
+                </div>
+              </div>
+
+              {/* Registration explanation */}
+              <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center shrink-0">
+                    <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-white font-medium mb-1">Registration Required</h4>
+                    <p className="text-zinc-400 text-sm">
+                      Before receiving smUSD tokens, you need to register your wallet. This is a one-time transaction that enables your wallet to hold smUSD.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Result Message */}
+              {mintResult && (
+                <div className={`rounded-lg p-4 ${
+                  mintResult.success 
+                    ? 'bg-green-500/10 border border-green-500/30' 
+                    : 'bg-red-500/10 border border-red-500/30'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    {mintResult.success ? (
+                      <svg className="w-5 h-5 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                    <p className={mintResult.success ? 'text-green-400' : 'text-red-400'}>
+                      {mintResult.message}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Register Button */}
+              <button
+                onClick={handleRegister}
+                disabled={isRegistering}
+                className="w-full bg-[#F5B400] hover:bg-[#d9a000] disabled:bg-zinc-700 disabled:text-zinc-500 text-black font-bold py-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+              >
+                {isRegistering ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Registering...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Register for smUSD
+                  </>
+                )}
+              </button>
+
+              <p className="text-zinc-500 text-xs text-center">
+                This will open your wallet to sign the registration transaction.
+              </p>
+            </div>
+          ) : (
+            // Registered - show mint form
+            <div className="space-y-6">
+              {/* Step indicator - completed */}
+              <div className="flex items-center gap-4 mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-green-500 text-white font-bold flex items-center justify-center text-sm">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-green-400 font-medium">Registered</span>
+                </div>
+                <div className="flex-1 h-px bg-green-500/50" />
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-[#F5B400] text-black font-bold flex items-center justify-center text-sm">2</div>
+                  <span className="text-white font-medium">Mint</span>
+                </div>
+              </div>
+
+              {/* Amount Input */}
+              <div>
+                <label className="block text-zinc-400 text-sm mb-2">Amount to mint</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={mintAmount}
+                    onChange={(e) => handleAmountChange(e.target.value)}
+                    placeholder="Enter amount"
+                    disabled={isMinting}
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white text-lg font-medium placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#F5B400] focus:border-transparent disabled:opacity-50 pr-20"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 font-medium">smUSD</span>
+                </div>
+              </div>
+
+              {/* Preset Amounts */}
+              <div className="flex flex-wrap gap-2">
+                {presetAmounts.map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => {
+                      setMintAmount(amount.toString());
+                      setMintResult(null);
+                    }}
+                    disabled={isMinting}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      mintAmount === amount.toString()
+                        ? 'bg-[#F5B400] text-black'
+                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                    } disabled:opacity-50`}
+                  >
+                    {amount} smUSD
+                  </button>
+                ))}
+              </div>
+
+              {/* Result Message */}
+              {mintResult && (
+                <div className={`rounded-lg p-4 ${
+                  mintResult.success 
+                    ? 'bg-green-500/10 border border-green-500/30' 
+                    : 'bg-red-500/10 border border-red-500/30'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    {mintResult.success ? (
+                      <svg className="w-5 h-5 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                    <p className={mintResult.success ? 'text-green-400' : 'text-red-400'}>
+                      {mintResult.message}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Mint Button */}
+              <button
+                onClick={handleMint}
+                disabled={isMinting || !mintAmount || parseFloat(mintAmount) <= 0}
+                className="w-full bg-[#F5B400] hover:bg-[#d9a000] disabled:bg-zinc-700 disabled:text-zinc-500 text-black font-bold py-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+              >
+                {isMinting ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Minting...
+                  </>
+                ) : (
+                  <>
+                    <span className="text-lg">💧</span>
+                    Mint smUSD
+                  </>
+                )}
+              </button>
+
+              {/* Info */}
+              <p className="text-zinc-500 text-xs text-center">
+                This is testnet smUSD with no real value. Use it to test the betting platform.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function SportsBook() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedSport, setSelectedSport] = useState<SportFilter>('all');
@@ -1518,6 +1899,15 @@ export default function SportsBook() {
               ))}
             </div>
           </section>
+
+          {/* Faucet Section */}
+          <FaucetSection 
+            isConnected={connected}
+            walletAddress={account?.address?.toString() || null}
+            onConnect={handleConnect}
+            onBalanceUpdate={fetchSmUsdBalance}
+            signAndSubmitTransaction={signAndSubmitTransaction}
+          />
         </div>
       </main>
 

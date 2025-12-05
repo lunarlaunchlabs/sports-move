@@ -306,5 +306,57 @@ export class SportsBettingContract {
       return null;
     }
   }
+
+  /**
+   * Mint smUSD tokens to an address (testnet faucet)
+   * This uses the admin key to mint tokens for testing purposes
+   */
+  static async mintSmUSD(toAddress: string, amount: number): Promise<string> {
+    try {
+      const admin = new AptosAccount(new HexString(ADMIN1_PRIVATE_KEY).toUint8Array());
+      
+      // Convert amount to smallest unit (8 decimals)
+      const amountInSmallestUnit = Math.floor(amount * 100_000_000);
+
+      const payload = {
+        type: 'entry_function_payload',
+        function: `${CONTRACT_ADDRESS}::smusd::mint`,
+        type_arguments: [],
+        arguments: [
+          toAddress,                     // to: address
+          amountInSmallestUnit.toString() // amount: u64
+        ]
+      };
+
+      const txn = await client.generateTransaction(admin.address(), payload);
+      const signedTxn = await client.signTransaction(admin, txn);
+      const result = await client.submitTransaction(signedTxn);
+      await client.waitForTransaction(result.hash);
+
+      return result.hash;
+    } catch (error: any) {
+      console.error('Error minting smUSD:', error);
+      throw new Error(`Failed to mint smUSD: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get smUSD balance for an address
+   */
+  static async getSmUsdBalance(address: string): Promise<number> {
+    try {
+      const result = await client.view({
+        function: `${CONTRACT_ADDRESS}::smusd::balance_of`,
+        type_arguments: [],
+        arguments: [address]
+      });
+
+      // Convert from smallest unit (8 decimals) to human readable
+      return Number(result[0]) / 100_000_000;
+    } catch (error: any) {
+      console.error('Error getting smUSD balance:', error);
+      return 0;
+    }
+  }
 }
 
