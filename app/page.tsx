@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import { FaFootballBall, FaBasketballBall, FaBaseballBall, FaHockeyPuck, FaFutbol } from 'react-icons/fa';
+import { FaFootballBall, FaBasketballBall, FaBaseballBall, FaHockeyPuck, FaFutbol, FaLink, FaMoneyBillWave, FaTint, FaLock, FaDice } from 'react-icons/fa';
+import { FaMoneyBill1Wave } from 'react-icons/fa6';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import Confetti from 'react-confetti';
 
@@ -980,7 +981,7 @@ function MyBetsSection({
   if (!isConnected) {
     return (
       <div className="bg-zinc-900 rounded-xl p-8 border border-zinc-800 text-center">
-        <div className="text-4xl mb-4">🔒</div>
+        <div className="text-4xl mb-4"><FaLock className="mx-auto text-zinc-400" /></div>
         <h3 className="text-xl font-semibold mb-2">Connect Your Wallet</h3>
         <p className="text-zinc-400 mb-6">Connect your wallet to view your betting history</p>
         <button
@@ -1053,7 +1054,7 @@ function MyBetsSection({
       {/* Empty State */}
       {!loading && bets.length === 0 && (
         <div className="bg-zinc-900 rounded-xl p-8 border border-zinc-800 text-center">
-          <div className="text-4xl mb-4">🎰</div>
+          <div className="text-4xl mb-4"><FaDice className="mx-auto text-zinc-400" /></div>
           <h3 className="text-xl font-semibold mb-2">No Bets Found</h3>
           <p className="text-zinc-400">
             {filter === 'all'
@@ -1312,7 +1313,7 @@ function FaucetSection({ isConnected, walletAddress, onConnect, onBalanceUpdate,
           {/* Header */}
           <div className="flex items-start gap-4 mb-6">
             <div className="w-12 h-12 rounded-xl bg-[#F5B400]/10 flex items-center justify-center shrink-0">
-              <span className="text-2xl">💧</span>
+              <FaTint className="text-2xl text-[#F5B400]" />
             </div>
             <div>
               <h3 className="text-xl font-semibold text-white mb-1">Testnet Faucet</h3>
@@ -1526,7 +1527,7 @@ function FaucetSection({ isConnected, walletAddress, onConnect, onBalanceUpdate,
                   </>
                 ) : (
                   <>
-                    <span className="text-lg">💧</span>
+                    <FaTint className="text-lg" />
                     Mint smUSD
                   </>
                 )}
@@ -1819,7 +1820,7 @@ export default function SportsBook() {
               ) : paginatedMarkets.length === 0 ? (
                 // Empty state
                 <div className="bg-zinc-900 rounded-xl p-12 border border-zinc-800 text-center">
-                  <div className="text-4xl mb-4">🏟️</div>
+                  <div className="text-4xl mb-4"><FaFootballBall className="mx-auto text-zinc-400" /></div>
                   <h3 className="text-xl font-semibold mb-2">No Markets Found</h3>
                   <p className="text-zinc-400">
                     {marketFilter === 'active'
@@ -1871,32 +1872,21 @@ export default function SportsBook() {
               How It Works
             </h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                {
-                  title: 'Connect Wallet',
-                  description: 'Link your Movement wallet to get started',
-                  icon: '🔗',
-                },
-                {
-                  title: 'Browse Markets',
-                  description: 'Explore available sports betting markets',
-                  icon: '🏈',
-                },
-                {
-                  title: 'Place Bets',
-                  description: 'Place your bets securely on-chain',
-                  icon: '💰',
-                },
-              ].map((step, index) => (
-                <div
-                  key={index}
-                  className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200"
-                >
-                  <div className="text-4xl mb-4">{step.icon}</div>
-                  <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-                  <p className="text-zinc-400">{step.description}</p>
-                </div>
-              ))}
+              <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
+                <div className="text-4xl mb-4"><FaLink className="text-[#F5B400]" /></div>
+                <h3 className="text-xl font-semibold mb-2">Connect Wallet</h3>
+                <p className="text-zinc-400">Link your Movement wallet to get started</p>
+              </div>
+              <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
+                <div className="text-4xl mb-4"><FaFootballBall className="text-[#F5B400]" /></div>
+                <h3 className="text-xl font-semibold mb-2">Browse Markets</h3>
+                <p className="text-zinc-400">Explore available sports betting markets</p>
+              </div>
+              <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
+                <div className="text-4xl mb-4"><FaMoneyBill1Wave className="text-[#F5B400]" /></div>
+                <h3 className="text-xl font-semibold mb-2">Place Bets</h3>
+                <p className="text-zinc-400">Place your bets securely on-chain</p>
+              </div>
             </div>
           </section>
 
