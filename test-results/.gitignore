@@ -1,6 +1,0 @@
-# Ignore all JSON test results
-*.json
-
-# Keep the README
-!README.md
-
