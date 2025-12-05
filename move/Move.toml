@@ -9,8 +9,8 @@ sports_betting = "0x5b1fb1ac32ddc2e2adca17a0829ec9d8b93d2cb14489ab1fea3b332395f6
 [dev-addresses]
 
 [dependencies.AptosFramework]
-git = "https://github.com/aptos-labs/aptos-core.git"
-rev = "mainnet"
+git = "https://github.com/movementlabsxyz/aptos-core.git"
+rev = "main"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]

@@ -202,7 +202,7 @@ module sports_betting::sports_betting {
         }
     }
 
-    /// Admin: Create a new betting market
+    /// Admin: Create a new betting market or update odds if market already exists
     public entry fun create_market(
         admin: &signer,
         game_id: String,
@@ -223,37 +223,57 @@ module sports_betting::sports_betting {
         assert!(home_odds != 0, EINVALID_ODDS);
         assert!(away_odds != 0, EINVALID_ODDS);
 
-        let market = Market {
-            game_id: game_id,
-            sport_key: sport_key,
-            sport_title: sport_title,
-            home_team: home_team,
-            away_team: away_team,
-            commence_time,
-            home_odds,
-            home_odds_positive,
-            away_odds,
-            away_odds_positive,
-            odds_last_update: timestamp::now_seconds(),
-            is_resolved: false,
-            is_cancelled: false,
-            winning_outcome: string::utf8(b""),
-        };
+        // Check if market already exists
+        let (found, index) = find_market_index(&game_id, state);
+        
+        if (found) {
+            // Market exists - check if resolved or cancelled
+            let market = vector::borrow_mut(&mut state.markets, index);
+            if (market.is_resolved || market.is_cancelled) {
+                // Ignore update for resolved/cancelled markets
+                return
+            };
+            
+            // Update odds fields only
+            market.home_odds = home_odds;
+            market.home_odds_positive = home_odds_positive;
+            market.away_odds = away_odds;
+            market.away_odds_positive = away_odds_positive;
+            market.odds_last_update = timestamp::now_seconds();
+        } else {
+            // Create new market
+            let market = Market {
+                game_id: game_id,
+                sport_key: sport_key,
+                sport_title: sport_title,
+                home_team: home_team,
+                away_team: away_team,
+                commence_time,
+                home_odds,
+                home_odds_positive,
+                away_odds,
+                away_odds_positive,
+                odds_last_update: timestamp::now_seconds(),
+                is_resolved: false,
+                is_cancelled: false,
+                winning_outcome: string::utf8(b""),
+            };
 
-        vector::push_back(&mut state.markets, market);
+            vector::push_back(&mut state.markets, market);
 
-        event::emit_event(&mut state.market_created_events, MarketCreatedEvent {
-            game_id: market.game_id,
-            sport_key: market.sport_key,
-            sport_title: market.sport_title,
-            home_team: market.home_team,
-            away_team: market.away_team,
-            commence_time: market.commence_time,
-            home_odds: market.home_odds,
-            home_odds_positive: market.home_odds_positive,
-            away_odds: market.away_odds,
-            away_odds_positive: market.away_odds_positive,
-        });
+            event::emit_event(&mut state.market_created_events, MarketCreatedEvent {
+                game_id: market.game_id,
+                sport_key: market.sport_key,
+                sport_title: market.sport_title,
+                home_team: market.home_team,
+                away_team: market.away_team,
+                commence_time: market.commence_time,
+                home_odds: market.home_odds,
+                home_odds_positive: market.home_odds_positive,
+                away_odds: market.away_odds,
+                away_odds_positive: market.away_odds_positive,
+            });
+        }
     }
 
     /// Admin: Update market details (before resolution)
