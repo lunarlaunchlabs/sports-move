@@ -1,14 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { FaFootballBall, FaBasketballBall, FaBaseballBall, FaHockeyPuck, FaFutbol } from 'react-icons/fa';
+import { useWallet } from '@aptos-labs/wallet-adapter-react';
 
 /**
  * Main App Color: #000000
  * Highlight Color (Logo Text Color): #F5B400
  * Text Color: #FFFFFF
  */
+
+// Contract configuration
+const CONTRACT_ADDRESS = '0x5b1fb1ac32ddc2e2adca17a0829ec9d8b93d2cb14489ab1fea3b332395f6f5a5';
+const NODE_URL = 'https://testnet.movementnetwork.xyz/v1';
 
 // Types
 interface Market {
@@ -51,14 +56,33 @@ const sportTabs: { key: SportFilter; label: string }[] = [
 interface NavBarProps {
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (open: boolean) => void;
+  walletAddress: string | null;
+  smUsdBalance: number | null;
+  onConnect: () => void;
+  onDisconnect: () => void;
 }
 
-function NavBar({ isMobileMenuOpen, setIsMobileMenuOpen }: NavBarProps) {
+function NavBar({ 
+  isMobileMenuOpen, 
+  setIsMobileMenuOpen, 
+  walletAddress, 
+  smUsdBalance,
+  onConnect,
+  onDisconnect 
+}: NavBarProps) {
   const navLinks = [
     { label: 'Markets', href: '#markets' },
     { label: 'My Bets', href: '#my-bets' },
     { label: 'How It Works', href: '#how-it-works' },
   ];
+
+  const truncateAddress = (address: string) => {
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  const formatBalance = (balance: number) => {
+    return balance.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  };
 
   return (
     <nav className="bg-black border-b border-zinc-800 sticky top-0 z-50">
@@ -89,9 +113,32 @@ function NavBar({ isMobileMenuOpen, setIsMobileMenuOpen }: NavBarProps) {
                 {link.label}
               </a>
             ))}
-            <button className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-5 py-2 rounded-lg transition-colors duration-200">
-              Connect Wallet
-            </button>
+            
+            {walletAddress ? (
+              <div className="flex items-center gap-3">
+                <div className="bg-zinc-800 rounded-lg px-4 py-2 flex items-center gap-2">
+                  <span className="text-[#F5B400] font-semibold">
+                    {smUsdBalance !== null ? `${formatBalance(smUsdBalance)} smUSD` : '...'}
+                  </span>
+                </div>
+                <button 
+                  onClick={onDisconnect}
+                  className="bg-zinc-800 hover:bg-zinc-700 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                >
+                  <span className="text-zinc-400">{truncateAddress(walletAddress)}</span>
+                  <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={onConnect}
+                className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-5 py-2 rounded-lg transition-colors duration-200"
+              >
+                Connect Wallet
+              </button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -137,7 +184,7 @@ function NavBar({ isMobileMenuOpen, setIsMobileMenuOpen }: NavBarProps) {
         {/* Mobile Navigation */}
         <div
           className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
-            isMobileMenuOpen ? 'max-h-64 pb-4' : 'max-h-0'
+            isMobileMenuOpen ? 'max-h-80 pb-4' : 'max-h-0'
           }`}
         >
           <div className="flex flex-col space-y-3 pt-2">
@@ -151,9 +198,36 @@ function NavBar({ isMobileMenuOpen, setIsMobileMenuOpen }: NavBarProps) {
                 {link.label}
               </a>
             ))}
-            <button className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-5 py-3 rounded-lg transition-colors duration-200 mt-2">
-              Connect Wallet
-            </button>
+            
+            {walletAddress ? (
+              <div className="space-y-2 pt-2">
+                <div className="bg-zinc-800 rounded-lg px-4 py-3 text-center">
+                  <p className="text-[#F5B400] font-semibold text-lg">
+                    {smUsdBalance !== null ? `${formatBalance(smUsdBalance)} smUSD` : '...'}
+                  </p>
+                  <p className="text-zinc-400 text-sm">{truncateAddress(walletAddress)}</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    onDisconnect();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full bg-zinc-700 hover:bg-zinc-600 text-white font-medium px-5 py-3 rounded-lg transition-colors duration-200"
+                >
+                  Disconnect
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => {
+                  onConnect();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-5 py-3 rounded-lg transition-colors duration-200 mt-2"
+              >
+                Connect Wallet
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -162,7 +236,12 @@ function NavBar({ isMobileMenuOpen, setIsMobileMenuOpen }: NavBarProps) {
 }
 
 // Hero Component
-function Hero() {
+interface HeroProps {
+  isConnected: boolean;
+  onConnect: () => void;
+}
+
+function Hero({ isConnected, onConnect }: HeroProps) {
   return (
     <section className="py-12 sm:py-20 text-center relative overflow-hidden rounded-2xl bg-zinc-950/50">
       {/* Animated Sports Icons Background */}
@@ -178,9 +257,14 @@ function Hero() {
           Decentralized sports betting powered by the Movement Network.
           Fast, transparent, and secure.
         </p>
-        <button className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-8 py-3 rounded-lg text-lg transition-colors duration-200">
-          Connect Wallet
-        </button>
+        {!isConnected && (
+          <button 
+            onClick={onConnect}
+            className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-8 py-3 rounded-lg text-lg transition-colors duration-200"
+          >
+            Connect Wallet
+          </button>
+        )}
       </div>
     </section>
   );
@@ -471,6 +555,73 @@ export default function SportsBook() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [smUsdBalance, setSmUsdBalance] = useState<number | null>(null);
+
+  // Wallet hook
+  const { connected, account, connect, disconnect, wallets } = useWallet();
+
+  // Fetch smUSD balance
+  const fetchSmUsdBalance = useCallback(async () => {
+    if (!account?.address) {
+      setSmUsdBalance(null);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${NODE_URL}/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          function: `${CONTRACT_ADDRESS}::smusd::balance_of`,
+          type_arguments: [],
+          arguments: [account.address.toString()]
+        })
+      });
+      
+      const data = await response.json();
+      if (data && data[0]) {
+        // smUSD has 8 decimals
+        setSmUsdBalance(Number(data[0]) / 100_000_000);
+      }
+    } catch (error) {
+      console.error('Failed to fetch smUSD balance:', error);
+      setSmUsdBalance(null);
+    }
+  }, [account?.address]);
+
+  // Fetch balance when wallet connects
+  useEffect(() => {
+    if (connected && account?.address) {
+      fetchSmUsdBalance();
+    } else {
+      setSmUsdBalance(null);
+    }
+  }, [connected, account?.address, fetchSmUsdBalance]);
+
+  // Handle wallet connect
+  const handleConnect = async () => {
+    try {
+      // Find Nightly wallet
+      const nightlyWallet = wallets?.find(w => w.name.toLowerCase().includes('nightly'));
+      if (nightlyWallet) {
+        await connect(nightlyWallet.name);
+      } else if (wallets && wallets.length > 0) {
+        await connect(wallets[0].name);
+      }
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+    }
+  };
+
+  // Handle wallet disconnect
+  const handleDisconnect = async () => {
+    try {
+      await disconnect();
+      setSmUsdBalance(null);
+    } catch (error) {
+      console.error('Failed to disconnect wallet:', error);
+    }
+  };
 
   // Fetch markets
   const fetchMarkets = async () => {
@@ -511,13 +662,17 @@ export default function SportsBook() {
       <NavBar
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
+        walletAddress={account?.address?.toString() || null}
+        smUsdBalance={smUsdBalance}
+        onConnect={handleConnect}
+        onDisconnect={handleDisconnect}
       />
 
       {/* Main Content Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-white">
           {/* Hero Section */}
-          <Hero />
+          <Hero isConnected={connected} onConnect={handleConnect} />
 
           {/* Markets Section */}
           <section id="markets" className="py-8">

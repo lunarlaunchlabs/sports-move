@@ -22,6 +22,9 @@
     "setup:init-only": "npm run contract:init && npm run wallet:register"
   },
   "dependencies": {
+    "@aptos-labs/wallet-adapter-core": "^7.8.0",
+    "@aptos-labs/wallet-adapter-react": "^7.2.2",
+    "@nightlylabs/aptos-wallet-adapter-plugin": "^0.2.12",
     "aptos": "^1.22.1",
     "dotenv": "^17.2.3",
     "next": "16.0.3",
