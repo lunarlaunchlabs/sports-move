@@ -1,26 +1,48 @@
 import { NextResponse } from 'next/server';
 import { TheOddsApi } from '@/app/services/TheOddsApi';
 import { SportsBettingContract } from '@/app/services/SportsBettingContract';
-import { MarketData } from '@/app/types';
+import { MarketData, SPORT_MARKET_KEY } from '@/app/types';
+
+// Valid sport keys for validation
+const VALID_SPORTS = Object.values(SPORT_MARKET_KEY);
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const sport = searchParams.get('sport');
   
+  // Validate sport parameter
+  if (!sport) {
+    return NextResponse.json(
+      { error: 'Missing required parameter: sport', validSports: VALID_SPORTS },
+      { status: 400 }
+    );
+  }
+  
+  if (!VALID_SPORTS.includes(sport as SPORT_MARKET_KEY)) {
+    return NextResponse.json(
+      { error: 'Invalid sport parameter', validSports: VALID_SPORTS },
+      { status: 400 }
+    );
+  }
+  
   try {
-    // Get markets from API (currently mock data)
-    const markets: MarketData[] = await TheOddsApi.getMarkets(sport);
+    // Get markets from The Odds API
+    const markets: MarketData[] = await TheOddsApi.getMarkets(sport as SPORT_MARKET_KEY);
     
-    // Always sync to blockchain
+    // Sync results tracking
     const syncResults = {
       total: markets.length,
-      created: 0,
-      updated: 0,
+      synced: 0,
+      skipped: 0,
       failed: 0,
       errors: [] as string[]
     };
 
     // Process markets and sync to blockchain
+    // The contract's create_market function handles duplicates:
+    // - If market exists and active: updates odds only
+    // - If market exists and resolved/cancelled: ignores
+    // - If market doesn't exist: creates new
     for (const market of markets) {
       try {
         // Only sync markets that haven't started yet
@@ -28,26 +50,13 @@ export async function GET(request: Request) {
         const now = Date.now();
         
         if (commenceTime > now) {
-          // Check if market already exists on blockchain
-          const existingMarket = await SportsBettingContract.getMarket(market.id);
-          
-          if (existingMarket) {
-            // Market exists - check if it needs updating
-            if (existingMarket.is_resolved || existingMarket.is_cancelled) {
-              console.log(`ℹ️  Market already finalized: ${market.id}`);
-              continue; // Skip resolved/cancelled markets
-            }
-            
-            // Update odds if they changed
-            const txHash = await SportsBettingContract.updateMarketOdds(market);
-            console.log(`✅ Market odds updated: ${market.id} - TX: ${txHash}`);
-            syncResults.updated++;
-          } else {
-            // Create new market
-            const txHash = await SportsBettingContract.createMarket(market);
-            console.log(`✅ Market created: ${market.id} - TX: ${txHash}`);
-            syncResults.created++;
-          }
+          // Call createMarket - contract handles create vs update internally
+          const txHash = await SportsBettingContract.createMarket(market);
+          console.log(`✅ Market synced: ${market.id} - TX: ${txHash}`);
+          syncResults.synced++;
+        } else {
+          console.log(`⏭️  Market already started, skipping: ${market.id}`);
+          syncResults.skipped++;
         }
       } catch (error: any) {
         console.error(`❌ Failed to sync market ${market.id}:`, error.message);
@@ -68,4 +77,3 @@ export async function GET(request: Request) {
     );
   }
 }
-

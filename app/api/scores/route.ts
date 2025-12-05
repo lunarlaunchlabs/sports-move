@@ -1,22 +1,40 @@
 import { NextResponse } from 'next/server';
 import { TheOddsApi } from '@/app/services/TheOddsApi';
 import { SportsBettingContract } from '@/app/services/SportsBettingContract';
-import { ScoreData } from '@/app/types';
+import { ScoreData, SPORT_MARKET_KEY } from '@/app/types';
+
+// Valid sport keys for validation
+const VALID_SPORTS = Object.values(SPORT_MARKET_KEY);
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const sport = searchParams.get('sport');
   
+  // Validate sport parameter
+  if (!sport) {
+    return NextResponse.json(
+      { error: 'Missing required parameter: sport', validSports: VALID_SPORTS },
+      { status: 400 }
+    );
+  }
+  
+  if (!VALID_SPORTS.includes(sport as SPORT_MARKET_KEY)) {
+    return NextResponse.json(
+      { error: 'Invalid sport parameter', validSports: VALID_SPORTS },
+      { status: 400 }
+    );
+  }
+  
   try {
-    // Get scores from API (currently mock data)
-    const scores: ScoreData[] = await TheOddsApi.getScores(sport);
+    // Get scores from The Odds API
+    const scores: ScoreData[] = await TheOddsApi.getScores(sport as SPORT_MARKET_KEY);
     
-    // Always resolve markets and settle bets
+    // Resolve results tracking
     const resolveResults = {
       total: scores.length,
       resolved: 0,
       settled: 0,
-      cancelled: 0,
+      skipped: 0,
       failed: 0,
       errors: [] as string[]
     };
@@ -31,19 +49,20 @@ export async function GET(request: Request) {
           
           if (!market) {
             console.log(`⚠️  Market not found on blockchain: ${score.id}`);
-            resolveResults.failed++;
-            resolveResults.errors.push(`${score.id}: Market not found on blockchain`);
+            resolveResults.skipped++;
             continue;
           }
 
           if (market.is_resolved) {
             console.log(`ℹ️  Market already resolved: ${score.id} (winner: ${market.winning_outcome})`);
-            continue; // Skip already resolved markets
+            resolveResults.skipped++;
+            continue;
           }
 
           if (market.is_cancelled) {
             console.log(`ℹ️  Market is cancelled: ${score.id}`);
-            continue; // Skip cancelled markets
+            resolveResults.skipped++;
+            continue;
           }
 
           // Resolve the market
@@ -60,6 +79,8 @@ export async function GET(request: Request) {
             console.error(`⚠️  Failed to settle bets for ${score.id}:`, settleError.message);
             // Continue even if settlement fails
           }
+        } else {
+          resolveResults.skipped++;
         }
       } catch (error: any) {
         console.error(`❌ Failed to resolve market ${score.id}:`, error.message);
@@ -80,4 +101,3 @@ export async function GET(request: Request) {
     );
   }
 }
-

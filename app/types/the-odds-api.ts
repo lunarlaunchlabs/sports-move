@@ -54,3 +54,10 @@ export enum SPORT_KEY {
   NHL = "icehockey_nhl",
   MLB = "baseball_mlb",
 }
+
+export enum SPORT_MARKET_KEY {
+  NFL = "americanfootball_nfl",
+  NBA = "basketball_nba",
+  NHL = "icehockey_nhl",
+  MLB = "baseball_mlb",
+}
