@@ -2,8 +2,8 @@ name: Update Scores Job
 
 on:
   schedule:
-    # Run every 10 minutes
-    - cron: '*/10 * * * *'
+    # Run every 1 hour
+    - cron: '0 * * * *'
   workflow_dispatch:
     # Allow manual trigger from GitHub UI
 
