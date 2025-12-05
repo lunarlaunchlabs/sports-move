@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { FaFootballBall, FaBasketballBall, FaBaseballBall, FaHockeyPuck, FaFutbol } from 'react-icons/fa';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
+import Confetti from 'react-confetti';
 
 /**
  * Main App Color: #000000
@@ -404,9 +405,26 @@ interface BetModalProps {
   isPlacingBet: boolean;
 }
 
+interface ConfirmedBet {
+  amount: number;
+  potentialPayout: number;
+}
+
 function BetModal({ selection, balance, onClose, onPlaceBet, isPlacingBet }: BetModalProps) {
   const [betAmount, setBetAmount] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [confirmedBet, setConfirmedBet] = useState<ConfirmedBet | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const [modalSize, setModalSize] = useState({ width: 0, height: 0 });
+
+  // Track modal size for confetti
+  useEffect(() => {
+    if (modalRef.current) {
+      const { offsetWidth, offsetHeight } = modalRef.current;
+      setModalSize({ width: offsetWidth, height: offsetHeight });
+    }
+  }, [isSuccess]);
 
   const parsedAmount = parseFloat(betAmount) || 0;
   const hasInsufficientBalance = balance !== null && parsedAmount > balance;
@@ -432,6 +450,12 @@ function BetModal({ selection, balance, onClose, onPlaceBet, isPlacingBet }: Bet
     setError(null);
     try {
       await onPlaceBet(parsedAmount);
+      // On success, show the success state
+      setConfirmedBet({
+        amount: parsedAmount,
+        potentialPayout: potentialPayout,
+      });
+      setIsSuccess(true);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to place bet';
       setError(errorMessage);
@@ -454,6 +478,114 @@ function BetModal({ selection, balance, onClose, onPlaceBet, isPlacingBet }: Bet
     }
   };
 
+  // Success State UI
+  if (isSuccess && confirmedBet) {
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div 
+          ref={modalRef}
+          className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-md overflow-hidden relative"
+        >
+          {/* Confetti - contained within modal */}
+          <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+            <Confetti
+              width={modalSize.width}
+              height={modalSize.height}
+              recycle={false}
+              numberOfPieces={200}
+              gravity={0.3}
+              colors={['#F5B400', '#FFFFFF', '#000000']}
+            />
+          </div>
+
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between relative z-10">
+            <h2 className="text-xl font-bold text-white">Bet Confirmed!</h2>
+            <button
+              onClick={onClose}
+              className="text-zinc-400 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Success Content */}
+          <div className="p-6 space-y-5 relative z-10">
+            {/* Success Icon */}
+            <div className="flex justify-center">
+              <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center">
+                <svg className="w-12 h-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Success Message */}
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-white mb-2">Bet Placed Successfully!</h3>
+              <p className="text-zinc-400">Your bet has been confirmed on the blockchain.</p>
+            </div>
+
+            {/* Bet Recap */}
+            <div className="bg-zinc-800/50 rounded-lg p-4 space-y-3">
+              {/* Match */}
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-400 text-sm">Match</span>
+                <span className="text-white text-sm font-medium">
+                  {selection.market.away_team} @ {selection.market.home_team}
+                </span>
+              </div>
+              
+              {/* Pick */}
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-400 text-sm">Your Pick</span>
+                <span className="text-[#F5B400] font-semibold">{selection.teamName}</span>
+              </div>
+
+              {/* Odds */}
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-400 text-sm">Odds</span>
+                <span className={`font-bold ${selection.oddsPositive ? 'text-green-400' : 'text-white'}`}>
+                  {selection.oddsPositive ? '+' : '-'}{selection.odds}
+                </span>
+              </div>
+
+              {/* Stake */}
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-400 text-sm">Stake</span>
+                <span className="text-white font-medium">
+                  {confirmedBet.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} smUSD
+                </span>
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-zinc-700 my-2" />
+
+              {/* Potential Payout */}
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-400 text-sm">Potential Payout</span>
+                <span className="text-green-400 font-bold text-lg">
+                  {confirmedBet.potentialPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} smUSD
+                </span>
+              </div>
+            </div>
+
+            {/* Done Button */}
+            <button
+              onClick={onClose}
+              className="w-full bg-[#F5B400] hover:bg-[#d9a000] text-black font-bold py-4 rounded-lg transition-colors duration-200"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Normal Bet Entry UI
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-md overflow-hidden">
@@ -1185,9 +1317,8 @@ export default function SportsBook() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       await Promise.all([fetchSmUsdBalance(), fetchUserBets()]);
       
-      // Close modal and show success
-      setBetSelection(null);
-      alert(`Bet placed successfully! Transaction: ${response.hash}`);
+      // Success! The modal will now show the success state
+      // (don't close it here - the modal handles its own success UI)
     } catch (error) {
       console.error('Failed to place bet:', error);
       throw error;
