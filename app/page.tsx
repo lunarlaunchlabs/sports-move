@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { FaFootballBall, FaBasketballBall, FaBaseballBall, FaHockeyPuck, FaFutbol } from 'react-icons/fa';
 
 /**
  * Main App Color: #000000
@@ -162,55 +163,67 @@ function NavBar({ isMobileMenuOpen, setIsMobileMenuOpen }: NavBarProps) {
 
 // Sports Icons Background Component
 function SportsIconsBackground() {
-  const patternSvg = (
-    <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style={{ position: 'absolute', top: 0, left: 0 }}>
-      <defs>
-        <pattern id="sports-pattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-          {/* Football */}
-          <g transform="translate(10, 10) rotate(15)" stroke="white" strokeWidth="1.2" fill="none" opacity="0.15">
-            <ellipse cx="12" cy="12" rx="10" ry="5" transform="rotate(45 12 12)" />
-            <path d="M6 6L18 18M8 12h8" strokeLinecap="round" />
-          </g>
-          {/* Basketball */}
-          <g transform="translate(60, 15) rotate(-10)" stroke="white" strokeWidth="1.2" fill="none" opacity="0.15">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 2v20M2 12h20" strokeLinecap="round" />
-          </g>
-          {/* Baseball */}
-          <g transform="translate(15, 55) rotate(25)" stroke="#F5B400" strokeWidth="1.2" fill="none" opacity="0.15">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M5 6c1.5 2 1.5 4 0 6s-1.5 4 0 6M19 6c-1.5 2-1.5 4 0 6s1.5 4 0 6" strokeLinecap="round" />
-          </g>
-          {/* Hockey */}
-          <g transform="translate(55, 60) rotate(-20)" stroke="#F5B400" strokeWidth="1.2" fill="none" opacity="0.15">
-            <ellipse cx="12" cy="10" rx="10" ry="4" />
-            <path d="M2 10v3c0 2 4.5 4 10 4s10-2 10-4v-3" strokeLinecap="round" />
-          </g>
-        </pattern>
-      </defs>
-      <rect width="200%" height="200%" fill="url(#sports-pattern)" />
-    </svg>
-  );
+  const icons = [
+    { Icon: FaFootballBall, color: 'rgba(255,255,255,0.15)' },
+    { Icon: FaBasketballBall, color: 'rgba(255,255,255,0.15)' },
+    { Icon: FaBaseballBall, color: 'rgba(245,180,0,0.15)' },
+    { Icon: FaHockeyPuck, color: 'rgba(245,180,0,0.15)' },
+    { Icon: FaFutbol, color: 'rgba(255,255,255,0.15)' },
+  ];
+
+  // Create a 2x2 tile that repeats seamlessly
+  const tileSize = 80;
+  const cols = 28;
+  const rows = 16;
+
+  const patternGrid = Array.from({ length: rows * cols }).map((_, i) => {
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    // Use 2x2 pattern so it tiles perfectly with 160px animation
+    const iconIndex = ((row % 2) * 2 + (col % 2)) % icons.length;
+    const { Icon, color } = icons[iconIndex];
+    const rotation = ((row * 7 + col * 13) * 15) % 360;
+
+    return (
+      <div
+        key={i}
+        className="absolute flex items-center justify-center"
+        style={{
+          width: tileSize,
+          height: tileSize,
+          left: col * tileSize,
+          top: row * tileSize,
+        }}
+      >
+        <Icon size={24} color={color} style={{ transform: `rotate(${rotation}deg)` }} />
+      </div>
+    );
+  });
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       <div 
-        className="absolute sports-scroll"
-        style={{ width: '200%', height: '200%', top: 0, left: 0 }}
+        className="absolute animate-sports-scroll"
+        style={{ 
+          width: cols * tileSize, 
+          height: rows * tileSize,
+          left: -tileSize * 2,
+          top: -tileSize * 2,
+        }}
       >
-        {patternSvg}
+        {patternGrid}
       </div>
-      <style jsx>{`
-        .sports-scroll {
-          animation: scroll-diagonal 6s linear infinite;
-        }
-        @keyframes scroll-diagonal {
-          0% {
+      <style jsx global>{`
+        @keyframes sports-scroll {
+          from {
             transform: translate(0, 0);
           }
-          100% {
-            transform: translate(-100px, -100px);
+          to {
+            transform: translate(-160px, -160px);
           }
+        }
+        .animate-sports-scroll {
+          animation: sports-scroll 8s linear infinite;
         }
       `}</style>
     </div>
@@ -650,3 +663,4 @@ export default function SportsBook() {
     </div>
   );
 }
+
