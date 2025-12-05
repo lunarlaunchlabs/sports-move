@@ -11,7 +11,7 @@ const { AptosClient } = require('aptos');
 const fs = require('fs');
 const path = require('path');
 
-const NODE_URL = process.env.NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
+const NODE_URL = process.env.NODE_URL || 'https://testnet.movementnetwork.xyz/v1';
 
 async function viewWallets() {
   console.log('👀 Oracle Admin Wallet Information\n');

@@ -1,10 +1,10 @@
 import { AptosClient, AptosAccount, HexString } from 'aptos';
 import { MarketData, ScoreData } from '@/app/types';
 
-// Contract configuration
-const NODE_URL = process.env.NODE_URL || 'https://testnet.movementnetwork.xyz/v1';
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS!;
-const ADMIN1_PRIVATE_KEY = process.env.ADMIN1_PRIVATE_KEY!;
+// Contract configuration - Movement Testnet (Fresh Deployment)
+const NODE_URL = 'https://testnet.movementnetwork.xyz/v1';
+const CONTRACT_ADDRESS = '0xc90dabb5730415a099ff16d8edf5a3a350ff28d3183e2ecb80182312cc99d5cb';
+const ADMIN1_PRIVATE_KEY = '0x8424863dda9e0238cea0c8c6d2c79de9b3778bb54983b5202dbbd29982c29fa9';
 
 // Initialize Aptos client for Movement Network
 const client = new AptosClient(NODE_URL);

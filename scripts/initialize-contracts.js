@@ -14,7 +14,7 @@
 require('dotenv').config();
 const { AptosClient, AptosAccount, HexString } = require('aptos');
 
-const NODE_URL = process.env.NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
+const NODE_URL = process.env.NODE_URL || 'https://testnet.movementnetwork.xyz/v1';
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
 
 async function sleep(ms) {

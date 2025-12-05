@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { AptosClient } from 'aptos';
 
-const NODE_URL = process.env.NODE_URL || 'https://testnet.movementnetwork.xyz/v1';
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS!;
+// Movement Testnet (Fresh Deployment)
+const NODE_URL = 'https://testnet.movementnetwork.xyz/v1';
+const CONTRACT_ADDRESS = '0xc90dabb5730415a099ff16d8edf5a3a350ff28d3183e2ecb80182312cc99d5cb';
 
 const client = new AptosClient(NODE_URL);
 

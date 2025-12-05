@@ -12,8 +12,8 @@ import Confetti from 'react-confetti';
  * Text Color: #FFFFFF
  */
 
-// Contract configuration
-const CONTRACT_ADDRESS = '0x5b1fb1ac32ddc2e2adca17a0829ec9d8b93d2cb14489ab1fea3b332395f6f5a5';
+// Contract configuration - Movement Testnet (Fresh Deployment)
+const CONTRACT_ADDRESS = '0xc90dabb5730415a099ff16d8edf5a3a350ff28d3183e2ecb80182312cc99d5cb';
 const NODE_URL = 'https://testnet.movementnetwork.xyz/v1';
 
 // Types
