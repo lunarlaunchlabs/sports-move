@@ -46,3 +46,11 @@ export interface ScoreData {
   scores: Score[];
   last_update: string;
 }
+
+export enum SPORT_KEY {
+  ALL = 0,
+  NFL = "americanfootball_nfl",
+  NBA = "basketball_nba",
+  NHL = "icehockey_nhl",
+  MLB = "baseball_mlb",
+}
