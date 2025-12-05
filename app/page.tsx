@@ -160,6 +160,63 @@ function NavBar({ isMobileMenuOpen, setIsMobileMenuOpen }: NavBarProps) {
   );
 }
 
+// Sports Icons Background Component
+function SportsIconsBackground() {
+  const patternSvg = (
+    <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style={{ position: 'absolute', top: 0, left: 0 }}>
+      <defs>
+        <pattern id="sports-pattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+          {/* Football */}
+          <g transform="translate(10, 10) rotate(15)" stroke="white" strokeWidth="1.2" fill="none" opacity="0.15">
+            <ellipse cx="12" cy="12" rx="10" ry="5" transform="rotate(45 12 12)" />
+            <path d="M6 6L18 18M8 12h8" strokeLinecap="round" />
+          </g>
+          {/* Basketball */}
+          <g transform="translate(60, 15) rotate(-10)" stroke="white" strokeWidth="1.2" fill="none" opacity="0.15">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 2v20M2 12h20" strokeLinecap="round" />
+          </g>
+          {/* Baseball */}
+          <g transform="translate(15, 55) rotate(25)" stroke="#F5B400" strokeWidth="1.2" fill="none" opacity="0.15">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M5 6c1.5 2 1.5 4 0 6s-1.5 4 0 6M19 6c-1.5 2-1.5 4 0 6s1.5 4 0 6" strokeLinecap="round" />
+          </g>
+          {/* Hockey */}
+          <g transform="translate(55, 60) rotate(-20)" stroke="#F5B400" strokeWidth="1.2" fill="none" opacity="0.15">
+            <ellipse cx="12" cy="10" rx="10" ry="4" />
+            <path d="M2 10v3c0 2 4.5 4 10 4s10-2 10-4v-3" strokeLinecap="round" />
+          </g>
+        </pattern>
+      </defs>
+      <rect width="200%" height="200%" fill="url(#sports-pattern)" />
+    </svg>
+  );
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div 
+        className="absolute sports-scroll"
+        style={{ width: '200%', height: '200%', top: 0, left: 0 }}
+      >
+        {patternSvg}
+      </div>
+      <style jsx>{`
+        .sports-scroll {
+          animation: scroll-diagonal 6s linear infinite;
+        }
+        @keyframes scroll-diagonal {
+          0% {
+            transform: translate(0, 0);
+          }
+          100% {
+            transform: translate(-100px, -100px);
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // Helper functions
 function formatOdds(odds: string, isPositive: boolean): string {
   return isPositive ? `+${odds}` : `-${odds}`;
@@ -422,18 +479,24 @@ export default function SportsBook() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-white">
           {/* Hero Section */}
-          <section className="py-12 sm:py-20 text-center">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">
-              Bet on Sports with{' '}
-              <span className="text-[#F5B400]">Movement</span>
-            </h1>
-            <p className="text-zinc-400 text-lg sm:text-xl max-w-2xl mx-auto mb-8">
-              Decentralized sports betting powered by the Movement Network.
-              Fast, transparent, and secure.
-            </p>
-            <button className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-8 py-3 rounded-lg text-lg transition-colors duration-200">
-              Get Started
-            </button>
+          <section className="py-12 sm:py-20 text-center relative overflow-hidden rounded-2xl bg-zinc-950/50">
+            {/* Animated Sports Icons Background */}
+            <SportsIconsBackground />
+            
+            {/* Hero Content */}
+            <div className="relative z-10">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">
+                Bet on Sports with{' '}
+                <span className="text-[#F5B400]">Movement</span>
+              </h1>
+              <p className="text-zinc-400 text-lg sm:text-xl max-w-2xl mx-auto mb-8">
+                Decentralized sports betting powered by the Movement Network.
+                Fast, transparent, and secure.
+              </p>
+              <button className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-8 py-3 rounded-lg text-lg transition-colors duration-200">
+                Get Started
+              </button>
+            </div>
           </section>
 
           {/* Markets Section */}
