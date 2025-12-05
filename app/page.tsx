@@ -1713,7 +1713,7 @@ export default function SportsBook() {
   const fetchMarkets = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/get-markets?filter=${marketFilter}`);
+      const response = await fetch(`/api/get-markets?filter=${marketFilter}&competition=${selectedSport}`);
       const data = await response.json();
       setMarkets(data.markets || []);
     } catch (error) {
@@ -1724,11 +1724,11 @@ export default function SportsBook() {
     }
   };
 
-  // Fetch markets when filter changes
+  // Fetch markets when filter or sport changes
   useEffect(() => {
     fetchMarkets();
     setCurrentPage(1);
-  }, [marketFilter]);
+  }, [marketFilter, selectedSport]);
 
   // Pagination calculations
   const totalPages = Math.ceil(markets.length / MARKETS_PER_PAGE);
@@ -1796,10 +1796,10 @@ export default function SportsBook() {
                   <button
                     key={tab.key}
                     onClick={() => setSelectedSport(tab.key)}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                    className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${
                       selectedSport === tab.key
-                        ? 'bg-zinc-700 text-white'
-                        : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300'
+                        ? 'bg-[#F5B400] text-black'
+                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
                     }`}
                   >
                     {tab.label}

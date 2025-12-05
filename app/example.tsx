@@ -57,7 +57,8 @@ export default function SportsBook() {
   // Fetch markets
   const fetchMarkets = async () => {
     try {
-      const response = await fetch(`/api/get-markets?filter=${marketFilter}`);
+      // Note: example.tsx doesn't have sport filtering, so we default to 'all'
+      const response = await fetch(`/api/get-markets?filter=${marketFilter}&competition=all`);
       const data = await response.json();
       setMarkets(data.markets || []);
     } catch (error) {
