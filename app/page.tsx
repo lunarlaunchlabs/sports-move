@@ -122,8 +122,19 @@ function NavBar({ isMobileMenuOpen, setIsMobileMenuOpen }: NavBarProps) {
   );
 }
 
+type SportFilter = 'all' | 'nfl' | 'nhl' | 'mlb' | 'nba';
+
+const sportTabs: { key: SportFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'nfl', label: 'NFL' },
+  { key: 'nhl', label: 'NHL' },
+  { key: 'mlb', label: 'MLB' },
+  { key: 'nba', label: 'NBA' },
+];
+
 export default function SportsBook() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [selectedSport, setSelectedSport] = useState<SportFilter>('all');
 
   return (
     <div className="min-h-screen bg-black">
@@ -155,8 +166,30 @@ export default function SportsBook() {
             <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4">
               Available Markets
             </h2>
+
+            {/* Sport Filter Tabs */}
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-1 px-1">
+              {sportTabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setSelectedSport(tab.key)}
+                  className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${
+                    selectedSport === tab.key
+                      ? 'bg-[#F5B400] text-black'
+                      : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
             <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
-              <p className="text-zinc-400">Markets content will go here...</p>
+              <p className="text-zinc-400">
+                {selectedSport === 'all'
+                  ? 'Showing all markets...'
+                  : `Showing ${selectedSport.toUpperCase()} markets...`}
+              </p>
             </div>
           </section>
 
