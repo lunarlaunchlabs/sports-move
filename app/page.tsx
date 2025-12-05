@@ -44,6 +44,29 @@ interface BetSelection {
   oddsPositive: boolean;
 }
 
+interface Bet {
+  bet_id: string;
+  user: string;
+  game_id: string;
+  outcome: string;
+  amount: string;
+  odds: string;
+  odds_is_negative: boolean;
+  potential_payout: string;
+  is_settled: boolean;
+  timestamp: string;
+}
+
+type BetFilter = 'all' | 'active' | 'resolved' | 'cancelled';
+type BetViewMode = 'table' | 'tiles';
+
+const betFilterOptions: { key: BetFilter; label: string }[] = [
+  { key: 'all', label: 'All Bets' },
+  { key: 'active', label: 'Active' },
+  { key: 'resolved', label: 'Resolved' },
+  { key: 'cancelled', label: 'Cancelled' },
+];
+
 const MARKETS_PER_PAGE = 10;
 
 const marketFilterTabs: { key: MarketFilter; label: string }[] = [
@@ -767,6 +790,247 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
   );
 }
 
+// My Bets Section Component
+interface MyBetsSectionProps {
+  bets: Bet[];
+  loading: boolean;
+  filter: BetFilter;
+  onFilterChange: (filter: BetFilter) => void;
+  viewMode: BetViewMode;
+  onViewModeChange: (mode: BetViewMode) => void;
+  isConnected: boolean;
+  onConnect: () => void;
+}
+
+function MyBetsSection({
+  bets,
+  loading,
+  filter,
+  onFilterChange,
+  viewMode,
+  onViewModeChange,
+  isConnected,
+  onConnect,
+}: MyBetsSectionProps) {
+  // Format helpers
+  const formatBetAmount = (amount: string) => {
+    return (parseInt(amount) / 100_000_000).toLocaleString(undefined, { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    });
+  };
+
+  const formatBetOdds = (odds: string, isNegative: boolean) => {
+    return isNegative ? `-${odds}` : `+${odds}`;
+  };
+
+  const formatBetDate = (timestamp: string) => {
+    return new Date(parseInt(timestamp) * 1000).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
+  const getBetStatusColor = (bet: Bet) => {
+    if (bet.is_settled) return 'bg-green-600';
+    return 'bg-blue-600';
+  };
+
+  const getBetStatusText = (bet: Bet) => {
+    if (bet.is_settled) return 'Settled';
+    return 'Active';
+  };
+
+  // Not connected state
+  if (!isConnected) {
+    return (
+      <div className="bg-zinc-900 rounded-xl p-8 border border-zinc-800 text-center">
+        <div className="text-4xl mb-4">🔒</div>
+        <h3 className="text-xl font-semibold mb-2">Connect Your Wallet</h3>
+        <p className="text-zinc-400 mb-6">Connect your wallet to view your betting history</p>
+        <button
+          onClick={onConnect}
+          className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-6 py-3 rounded-lg transition-colors duration-200"
+        >
+          Connect Wallet
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Controls Row */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        {/* Filter Dropdown */}
+        <div className="flex items-center gap-3">
+          <label className="text-zinc-400 text-sm">Filter:</label>
+          <select
+            value={filter}
+            onChange={(e) => onFilterChange(e.target.value as BetFilter)}
+            className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#F5B400] focus:border-transparent"
+          >
+            {betFilterOptions.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="flex items-center gap-2 bg-zinc-800 rounded-lg p-1">
+          <button
+            onClick={() => onViewModeChange('tiles')}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              viewMode === 'tiles'
+                ? 'bg-[#F5B400] text-black'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+          </button>
+          <button
+            onClick={() => onViewModeChange('table')}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              viewMode === 'table'
+                ? 'bg-[#F5B400] text-black'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Loading State */}
+      {loading && (
+        <div className="bg-zinc-900 rounded-xl p-8 border border-zinc-800 text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-[#F5B400] border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-zinc-400">Loading your bets...</p>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && bets.length === 0 && (
+        <div className="bg-zinc-900 rounded-xl p-8 border border-zinc-800 text-center">
+          <div className="text-4xl mb-4">🎰</div>
+          <h3 className="text-xl font-semibold mb-2">No Bets Found</h3>
+          <p className="text-zinc-400">
+            {filter === 'all'
+              ? "You haven't placed any bets yet. Browse the markets above to get started!"
+              : `No ${filter} bets to display.`}
+          </p>
+        </div>
+      )}
+
+      {/* Tiles View */}
+      {!loading && bets.length > 0 && viewMode === 'tiles' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {bets.map((bet) => (
+            <div
+              key={bet.bet_id}
+              className="bg-zinc-900 rounded-lg border border-zinc-800 p-4 hover:border-zinc-700 transition-colors"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs text-zinc-500">Bet #{bet.bet_id}</span>
+                <span className={`text-xs font-medium px-2 py-1 rounded ${getBetStatusColor(bet)} text-white`}>
+                  {getBetStatusText(bet)}
+                </span>
+              </div>
+
+              {/* Pick */}
+              <div className="mb-3">
+                <p className="text-zinc-400 text-xs mb-1">Your Pick</p>
+                <p className="text-white font-semibold text-lg">{bet.outcome}</p>
+              </div>
+
+              {/* Odds & Amount */}
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <p className="text-zinc-400 text-xs mb-1">Odds</p>
+                  <p className={`font-bold ${!bet.odds_is_negative ? 'text-green-400' : 'text-white'}`}>
+                    {formatBetOdds(bet.odds, bet.odds_is_negative)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-zinc-400 text-xs mb-1">Stake</p>
+                  <p className="text-white font-medium">{formatBetAmount(bet.amount)} smUSD</p>
+                </div>
+              </div>
+
+              {/* Potential Payout */}
+              <div className="bg-zinc-800/50 rounded-lg p-3 mb-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400 text-sm">Potential Payout</span>
+                  <span className="text-green-400 font-bold">{formatBetAmount(bet.potential_payout)} smUSD</span>
+                </div>
+              </div>
+
+              {/* Timestamp */}
+              <p className="text-zinc-500 text-xs text-right">{formatBetDate(bet.timestamp)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Table View */}
+      {!loading && bets.length > 0 && viewMode === 'table' && (
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-zinc-800">
+                  <th className="text-left text-zinc-400 text-sm font-medium px-4 py-3">Bet ID</th>
+                  <th className="text-left text-zinc-400 text-sm font-medium px-4 py-3">Pick</th>
+                  <th className="text-left text-zinc-400 text-sm font-medium px-4 py-3">Odds</th>
+                  <th className="text-right text-zinc-400 text-sm font-medium px-4 py-3">Stake</th>
+                  <th className="text-right text-zinc-400 text-sm font-medium px-4 py-3">Potential</th>
+                  <th className="text-center text-zinc-400 text-sm font-medium px-4 py-3">Status</th>
+                  <th className="text-right text-zinc-400 text-sm font-medium px-4 py-3">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bets.map((bet) => (
+                  <tr key={bet.bet_id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                    <td className="px-4 py-3 text-zinc-500 text-sm">#{bet.bet_id}</td>
+                    <td className="px-4 py-3 text-white font-medium">{bet.outcome}</td>
+                    <td className={`px-4 py-3 font-bold ${!bet.odds_is_negative ? 'text-green-400' : 'text-white'}`}>
+                      {formatBetOdds(bet.odds, bet.odds_is_negative)}
+                    </td>
+                    <td className="px-4 py-3 text-white text-right">{formatBetAmount(bet.amount)}</td>
+                    <td className="px-4 py-3 text-green-400 font-medium text-right">{formatBetAmount(bet.potential_payout)}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`text-xs font-medium px-2 py-1 rounded ${getBetStatusColor(bet)} text-white`}>
+                        {getBetStatusText(bet)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-zinc-500 text-sm text-right">{formatBetDate(bet.timestamp)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Bet Count */}
+      {!loading && bets.length > 0 && (
+        <p className="text-zinc-500 text-sm text-right">
+          Showing {bets.length} bet{bets.length !== 1 ? 's' : ''}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function SportsBook() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedSport, setSelectedSport] = useState<SportFilter>('all');
@@ -777,6 +1041,10 @@ export default function SportsBook() {
   const [smUsdBalance, setSmUsdBalance] = useState<number | null>(null);
   const [betSelection, setBetSelection] = useState<BetSelection | null>(null);
   const [isPlacingBet, setIsPlacingBet] = useState(false);
+  const [userBets, setUserBets] = useState<Bet[]>([]);
+  const [betsFilter, setBetsFilter] = useState<BetFilter>('all');
+  const [betsViewMode, setBetsViewMode] = useState<BetViewMode>('tiles');
+  const [loadingBets, setLoadingBets] = useState(false);
 
   // Wallet hook
   const { connected, account, connect, disconnect, wallets, signAndSubmitTransaction } = useWallet();
@@ -810,6 +1078,26 @@ export default function SportsBook() {
     }
   }, [account?.address]);
 
+  // Fetch user bets
+  const fetchUserBets = useCallback(async () => {
+    if (!account?.address) {
+      setUserBets([]);
+      return;
+    }
+
+    setLoadingBets(true);
+    try {
+      const response = await fetch(`/api/get-user-bets?address=${account.address.toString()}&filter=${betsFilter}`);
+      const data = await response.json();
+      setUserBets(data.bets || []);
+    } catch (error) {
+      console.error('Failed to fetch user bets:', error);
+      setUserBets([]);
+    } finally {
+      setLoadingBets(false);
+    }
+  }, [account?.address, betsFilter]);
+
   // Fetch balance when wallet connects
   useEffect(() => {
     if (connected && account?.address) {
@@ -818,6 +1106,15 @@ export default function SportsBook() {
       setSmUsdBalance(null);
     }
   }, [connected, account?.address, fetchSmUsdBalance]);
+
+  // Fetch user bets when wallet connects or filter changes
+  useEffect(() => {
+    if (connected && account?.address) {
+      fetchUserBets();
+    } else {
+      setUserBets([]);
+    }
+  }, [connected, account?.address, betsFilter, fetchUserBets]);
 
   // Handle wallet connect
   const handleConnect = async () => {
@@ -884,9 +1181,9 @@ export default function SportsBook() {
 
       const response = await signAndSubmitTransaction(payload);
       
-      // Wait a bit for transaction to process, then refresh balance
+      // Wait a bit for transaction to process, then refresh balance and bets
       await new Promise(resolve => setTimeout(resolve, 2000));
-      await fetchSmUsdBalance();
+      await Promise.all([fetchSmUsdBalance(), fetchUserBets()]);
       
       // Close modal and show success
       setBetSelection(null);
@@ -1045,9 +1342,16 @@ export default function SportsBook() {
             <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4">
               My Bets
             </h2>
-            <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
-              <p className="text-zinc-400">Your bets will appear here...</p>
-            </div>
+            <MyBetsSection
+              bets={userBets}
+              loading={loadingBets}
+              filter={betsFilter}
+              onFilterChange={setBetsFilter}
+              viewMode={betsViewMode}
+              onViewModeChange={setBetsViewMode}
+              isConnected={connected}
+              onConnect={handleConnect}
+            />
           </section>
 
           <section id="how-it-works" className="py-8">
