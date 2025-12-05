@@ -36,6 +36,14 @@ interface Market {
 type MarketFilter = 'all' | 'active' | 'resolved' | 'cancelled';
 type SportFilter = 'all' | 'nfl' | 'nhl' | 'mlb' | 'nba';
 
+interface BetSelection {
+  market: Market;
+  outcome: 'home' | 'away';
+  teamName: string;
+  odds: string;
+  oddsPositive: boolean;
+}
+
 const MARKETS_PER_PAGE = 10;
 
 const marketFilterTabs: { key: MarketFilter; label: string }[] = [
@@ -364,14 +372,216 @@ function getSportColor(sportKey: string): string {
   return '#F5B400';
 }
 
+// BetModal Component
+interface BetModalProps {
+  selection: BetSelection;
+  balance: number | null;
+  onClose: () => void;
+  onPlaceBet: (amount: number) => Promise<void>;
+  isPlacingBet: boolean;
+}
+
+function BetModal({ selection, balance, onClose, onPlaceBet, isPlacingBet }: BetModalProps) {
+  const [betAmount, setBetAmount] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+
+  const parsedAmount = parseFloat(betAmount) || 0;
+  const hasInsufficientBalance = balance !== null && parsedAmount > balance;
+  const isValidAmount = parsedAmount > 0 && !hasInsufficientBalance;
+
+  // Calculate potential payout using same formula as contract
+  const calculatePayout = (amount: number, odds: string, isPositive: boolean): number => {
+    const oddsValue = parseFloat(odds);
+    if (isPositive) {
+      return amount + (amount * oddsValue / 100);
+    } else {
+      return amount + (amount * 100 / oddsValue);
+    }
+  };
+
+  const potentialPayout = parsedAmount > 0 
+    ? calculatePayout(parsedAmount, selection.odds, selection.oddsPositive)
+    : 0;
+
+  const handleSubmit = async () => {
+    if (!isValidAmount) return;
+    
+    setError(null);
+    try {
+      await onPlaceBet(parsedAmount);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to place bet';
+      setError(errorMessage);
+    }
+  };
+
+  const handleAmountChange = (value: string) => {
+    // Only allow valid number input
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setBetAmount(value);
+      setError(null);
+    }
+  };
+
+  const setPercentage = (percent: number) => {
+    if (balance !== null) {
+      const amount = (balance * percent / 100).toFixed(2);
+      setBetAmount(amount);
+      setError(null);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-md overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-white">Place Bet</h2>
+          <button
+            onClick={onClose}
+            disabled={isPlacingBet}
+            className="text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-5">
+          {/* Match Info */}
+          <div className="bg-zinc-800/50 rounded-lg p-4">
+            <p className="text-zinc-400 text-sm mb-1">{selection.market.sport_title}</p>
+            <p className="text-white font-medium">
+              {selection.market.away_team} @ {selection.market.home_team}
+            </p>
+          </div>
+
+          {/* Selection */}
+          <div className="flex items-center justify-between bg-[#F5B400]/10 border border-[#F5B400]/30 rounded-lg p-4">
+            <div>
+              <p className="text-zinc-400 text-sm">Your Pick</p>
+              <p className="text-white font-semibold text-lg">{selection.teamName}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-zinc-400 text-sm">Odds</p>
+              <p className={`font-bold text-xl ${selection.oddsPositive ? 'text-green-400' : 'text-white'}`}>
+                {selection.oddsPositive ? '+' : '-'}{selection.odds}
+              </p>
+            </div>
+          </div>
+
+          {/* Bet Amount Input */}
+          <div>
+            <label className="block text-zinc-400 text-sm mb-2">Bet Amount (smUSD)</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={betAmount}
+                onChange={(e) => handleAmountChange(e.target.value)}
+                placeholder="0.00"
+                disabled={isPlacingBet}
+                className={`w-full bg-zinc-800 border rounded-lg px-4 py-3 text-white text-lg font-medium placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#F5B400] disabled:opacity-50 ${
+                  hasInsufficientBalance ? 'border-red-500' : 'border-zinc-700'
+                }`}
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500">smUSD</span>
+            </div>
+            
+            {/* Quick amount buttons */}
+            <div className="flex gap-2 mt-2">
+              {[25, 50, 75, 100].map((percent) => (
+                <button
+                  key={percent}
+                  onClick={() => setPercentage(percent)}
+                  disabled={isPlacingBet || balance === null}
+                  className="flex-1 py-1.5 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-md transition-colors disabled:opacity-50"
+                >
+                  {percent === 100 ? 'Max' : `${percent}%`}
+                </button>
+              ))}
+            </div>
+
+            {/* Balance display */}
+            {balance !== null && (
+              <p className={`text-sm mt-2 ${hasInsufficientBalance ? 'text-red-400' : 'text-zinc-500'}`}>
+                Available: {balance.toLocaleString(undefined, { maximumFractionDigits: 2 })} smUSD
+                {hasInsufficientBalance && ' (Insufficient balance)'}
+              </p>
+            )}
+          </div>
+
+          {/* Potential Payout */}
+          {parsedAmount > 0 && (
+            <div className="bg-zinc-800/50 rounded-lg p-4">
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-400">Potential Payout</span>
+                <span className="text-green-400 font-bold text-xl">
+                  {potentialPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} smUSD
+                </span>
+              </div>
+              <div className="flex justify-between items-center mt-1">
+                <span className="text-zinc-500 text-sm">Potential Profit</span>
+                <span className="text-zinc-400 text-sm">
+                  +{(potentialPayout - parsedAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} smUSD
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
+          {/* Disclosure */}
+          <p className="text-zinc-500 text-xs text-center">
+            All bets are final and cannot be reversed. By placing this bet, you agree to our terms.
+          </p>
+
+          {/* Submit Button */}
+          <button
+            onClick={handleSubmit}
+            disabled={!isValidAmount || isPlacingBet}
+            className="w-full bg-[#F5B400] hover:bg-[#d9a000] disabled:bg-zinc-700 disabled:text-zinc-500 text-black font-bold py-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+          >
+            {isPlacingBet ? (
+              <>
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Placing Bet...
+              </>
+            ) : (
+              'Place Bet'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // MarketCard Component
 interface MarketCardProps {
   market: Market;
+  onBetSelect: (market: Market, outcome: 'home' | 'away') => void;
+  isWalletConnected: boolean;
 }
 
-function MarketCard({ market }: MarketCardProps) {
+function MarketCard({ market, onBetSelect, isWalletConnected }: MarketCardProps) {
   const sportColor = getSportColor(market.sport_key);
   const isLive = !market.is_resolved && !market.is_cancelled;
+  const canBet = isLive && isWalletConnected;
+
+  const handleBetClick = (outcome: 'home' | 'away') => {
+    if (!canBet) return;
+    onBetSelect(market, outcome);
+  };
 
   return (
     <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden hover:border-zinc-700 transition-colors duration-200">
@@ -410,9 +620,10 @@ function MarketCard({ market }: MarketCardProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Away Team */}
           <button
-            disabled={!isLive}
+            onClick={() => handleBetClick('away')}
+            disabled={!canBet}
             className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${
-              isLive
+              canBet
                 ? 'border-zinc-700 hover:border-[#F5B400] hover:bg-zinc-800 cursor-pointer'
                 : 'border-zinc-800 opacity-60 cursor-not-allowed'
             }`}
@@ -429,9 +640,10 @@ function MarketCard({ market }: MarketCardProps) {
 
           {/* Home Team */}
           <button
-            disabled={!isLive}
+            onClick={() => handleBetClick('home')}
+            disabled={!canBet}
             className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${
-              isLive
+              canBet
                 ? 'border-zinc-700 hover:border-[#F5B400] hover:bg-zinc-800 cursor-pointer'
                 : 'border-zinc-800 opacity-60 cursor-not-allowed'
             }`}
@@ -446,6 +658,13 @@ function MarketCard({ market }: MarketCardProps) {
             </span>
           </button>
         </div>
+        
+        {/* Connect wallet hint */}
+        {isLive && !isWalletConnected && (
+          <p className="text-zinc-500 text-xs text-center mt-3">
+            Connect wallet to place bets
+          </p>
+        )}
       </div>
     </div>
   );
@@ -556,9 +775,11 @@ export default function SportsBook() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [smUsdBalance, setSmUsdBalance] = useState<number | null>(null);
+  const [betSelection, setBetSelection] = useState<BetSelection | null>(null);
+  const [isPlacingBet, setIsPlacingBet] = useState(false);
 
   // Wallet hook
-  const { connected, account, connect, disconnect, wallets } = useWallet();
+  const { connected, account, connect, disconnect, wallets, signAndSubmitTransaction } = useWallet();
 
   // Fetch smUSD balance
   const fetchSmUsdBalance = useCallback(async () => {
@@ -620,6 +841,61 @@ export default function SportsBook() {
       setSmUsdBalance(null);
     } catch (error) {
       console.error('Failed to disconnect wallet:', error);
+    }
+  };
+
+  // Handle bet selection from MarketCard
+  const handleBetSelect = (market: Market, outcome: 'home' | 'away') => {
+    const teamName = outcome === 'home' ? market.home_team : market.away_team;
+    const odds = outcome === 'home' ? market.home_odds : market.away_odds;
+    const oddsPositive = outcome === 'home' ? market.home_odds_positive : market.away_odds_positive;
+
+    setBetSelection({
+      market,
+      outcome,
+      teamName,
+      odds,
+      oddsPositive,
+    });
+  };
+
+  // Handle placing bet on contract
+  const handlePlaceBet = async (amount: number) => {
+    if (!betSelection || !account?.address) {
+      throw new Error('No bet selection or wallet not connected');
+    }
+
+    setIsPlacingBet(true);
+    try {
+      // Convert amount to smallest unit (8 decimals)
+      const amountInSmallestUnit = Math.floor(amount * 100_000_000);
+
+      const payload = {
+        data: {
+          function: `${CONTRACT_ADDRESS}::sports_betting::place_bet` as const,
+          typeArguments: [],
+          functionArguments: [
+            betSelection.market.game_id,
+            betSelection.teamName, // Use team name as outcome
+            amountInSmallestUnit.toString(),
+          ],
+        },
+      };
+
+      const response = await signAndSubmitTransaction(payload);
+      
+      // Wait a bit for transaction to process, then refresh balance
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await fetchSmUsdBalance();
+      
+      // Close modal and show success
+      setBetSelection(null);
+      alert(`Bet placed successfully! Transaction: ${response.hash}`);
+    } catch (error) {
+      console.error('Failed to place bet:', error);
+      throw error;
+    } finally {
+      setIsPlacingBet(false);
     }
   };
 
@@ -745,7 +1021,12 @@ export default function SportsBook() {
               ) : (
                 // Market cards
                 paginatedMarkets.map((market) => (
-                  <MarketCard key={market.game_id} market={market} />
+                  <MarketCard 
+                    key={market.game_id} 
+                    market={market} 
+                    onBetSelect={handleBetSelect}
+                    isWalletConnected={connected}
+                  />
                 ))
               )}
             </div>
@@ -822,6 +1103,17 @@ export default function SportsBook() {
           </div>
         </div>
       </footer>
+
+      {/* Bet Modal */}
+      {betSelection && (
+        <BetModal
+          selection={betSelection}
+          balance={smUsdBalance}
+          onClose={() => setBetSelection(null)}
+          onPlaceBet={handlePlaceBet}
+          isPlacingBet={isPlacingBet}
+        />
+      )}
     </div>
   );
 }
