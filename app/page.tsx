@@ -179,7 +179,7 @@ function Hero() {
           Fast, transparent, and secure.
         </p>
         <button className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-8 py-3 rounded-lg text-lg transition-colors duration-200">
-          Get Started
+          Connect Wallet
         </button>
       </div>
     </section>
