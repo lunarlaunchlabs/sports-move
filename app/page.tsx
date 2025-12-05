@@ -79,13 +79,23 @@ const marketFilterTabs: { key: MarketFilter; label: string }[] = [
   { key: 'cancelled', label: 'Cancelled' },
 ];
 
-const sportTabs: { key: SportFilter; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'nfl', label: 'NFL' },
-  { key: 'nhl', label: 'NHL' },
-  { key: 'mlb', label: 'MLB' },
-  { key: 'nba', label: 'NBA' },
+const sportTabs: { key: SportFilter; label: string; icon: React.ReactNode }[] = [
+  { key: 'all', label: 'All', icon: null },
+  { key: 'nfl', label: 'NFL', icon: <FaFootballBall className="w-4 h-4" /> },
+  { key: 'nhl', label: 'NHL', icon: <FaHockeyPuck className="w-4 h-4" /> },
+  { key: 'mlb', label: 'MLB', icon: <FaBaseballBall className="w-4 h-4" /> },
+  { key: 'nba', label: 'NBA', icon: <FaBasketballBall className="w-4 h-4" /> },
 ];
+
+// Helper function to get sport icon by sport key
+function getSportIcon(sportKey: string): React.ReactNode {
+  const key = sportKey.toLowerCase();
+  if (key.includes('football') || key.includes('nfl')) return <FaFootballBall className="w-3.5 h-3.5" />;
+  if (key.includes('basketball') || key.includes('nba')) return <FaBasketballBall className="w-3.5 h-3.5" />;
+  if (key.includes('hockey') || key.includes('nhl')) return <FaHockeyPuck className="w-3.5 h-3.5" />;
+  if (key.includes('baseball') || key.includes('mlb')) return <FaBaseballBall className="w-3.5 h-3.5" />;
+  return null;
+}
 
 const dateSortOptions: { key: DateSort; label: string }[] = [
   { key: 'soonest', label: 'Soonest First' },
@@ -615,7 +625,10 @@ function BetModal({ selection, balance, onClose, onPlaceBet, isPlacingBet }: Bet
         <div className="p-6 space-y-5">
           {/* Match Info */}
           <div className="bg-zinc-800/50 rounded-lg p-4">
-            <p className="text-zinc-400 text-sm mb-1">{selection.market.sport_title}</p>
+            <p className="text-zinc-400 text-sm mb-1 flex items-center gap-1.5">
+              {getSportIcon(selection.market.sport_key)}
+              {selection.market.sport_title}
+            </p>
             <p className="text-white font-medium">
               {selection.market.away_team} @ {selection.market.home_team}
             </p>
@@ -752,9 +765,10 @@ function MarketCard({ market, onBetSelect, isWalletConnected }: MarketCardProps)
       <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span
-            className="text-xs font-bold px-2 py-1 rounded"
+            className="text-xs font-bold px-2 py-1 rounded flex items-center gap-1.5"
             style={{ backgroundColor: sportColor, color: '#fff' }}
           >
+            {getSportIcon(market.sport_key)}
             {market.sport_title}
           </span>
           <span className="text-zinc-400 text-sm">
@@ -1810,12 +1824,13 @@ export default function SportsBook() {
                   <button
                     key={tab.key}
                     onClick={() => setSelectedSport(tab.key)}
-                    className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${
+                    className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 flex items-center gap-2 ${
                       selectedSport === tab.key
                         ? 'bg-[#F5B400] text-black'
                         : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
                     }`}
                   >
+                    {tab.icon}
                     {tab.label}
                   </button>
                 ))}
