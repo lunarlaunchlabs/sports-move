@@ -11,6 +11,7 @@ export function WalletProvider({ children }: PropsWithChildren) {
       dappConfig={{
         network: Network.TESTNET,
       }}
+      optInWallets={['Nightly']}
       onError={(error) => {
         console.error('Wallet error:', error);
       }}
