@@ -1565,6 +1565,26 @@ function FaucetSection({ isConnected, walletAddress, onConnect, onBalanceUpdate,
   );
 }
 
+// Splash Screen Component
+function SplashScreen() {
+  return (
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center">
+      <Image
+        src="/SPORTS_MOVE_ENTRY_LOGO.png"
+        alt="Sports Move"
+        width={280}
+        height={280}
+        className="mb-8"
+        priority
+      />
+      <div className="flex items-center gap-3">
+        <div className="animate-spin h-5 w-5 border-2 border-[#F5B400] border-t-transparent rounded-full" />
+        <p className="text-zinc-400 text-lg">Checking connection...</p>
+      </div>
+    </div>
+  );
+}
+
 export default function SportsBook() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedSport, setSelectedSport] = useState<SportFilter>('all');
@@ -1580,9 +1600,27 @@ export default function SportsBook() {
   const [betsFilter, setBetsFilter] = useState<BetFilter>('all');
   const [betsViewMode, setBetsViewMode] = useState<BetViewMode>('tiles');
   const [loadingBets, setLoadingBets] = useState(false);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
 
   // Wallet hook
-  const { connected, account, connect, disconnect, wallets, signAndSubmitTransaction } = useWallet();
+  const { connected, account, connect, disconnect, wallets, signAndSubmitTransaction, isLoading: isWalletLoading } = useWallet();
+
+  // Check wallet connection status
+  useEffect(() => {
+    // Wait for wallet adapter to finish loading
+    if (!isWalletLoading) {
+      // Add a small delay for smoother UX
+      const timer = setTimeout(() => {
+        setIsCheckingConnection(false);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isWalletLoading]);
+
+  // Show splash screen while checking connection
+  if (isCheckingConnection) {
+    return <SplashScreen />;
+  }
 
   // Fetch smUSD balance
   const fetchSmUsdBalance = useCallback(async () => {
