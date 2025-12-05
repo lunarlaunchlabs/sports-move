@@ -161,6 +161,31 @@ function NavBar({ isMobileMenuOpen, setIsMobileMenuOpen }: NavBarProps) {
   );
 }
 
+// Hero Component
+function Hero() {
+  return (
+    <section className="py-12 sm:py-20 text-center relative overflow-hidden rounded-2xl bg-zinc-950/50">
+      {/* Animated Sports Icons Background */}
+      <SportsIconsBackground />
+      
+      {/* Hero Content */}
+      <div className="relative z-10">
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">
+          Bet on Sports with{' '}
+          <span className="text-[#F5B400]">Movement</span>
+        </h1>
+        <p className="text-zinc-400 text-lg sm:text-xl max-w-2xl mx-auto mb-8">
+          Decentralized sports betting powered by the Movement Network.
+          Fast, transparent, and secure.
+        </p>
+        <button className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-8 py-3 rounded-lg text-lg transition-colors duration-200">
+          Get Started
+        </button>
+      </div>
+    </section>
+  );
+}
+
 // Sports Icons Background Component
 function SportsIconsBackground() {
   const icons = [
@@ -492,25 +517,7 @@ export default function SportsBook() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-white">
           {/* Hero Section */}
-          <section className="py-12 sm:py-20 text-center relative overflow-hidden rounded-2xl bg-zinc-950/50">
-            {/* Animated Sports Icons Background */}
-            <SportsIconsBackground />
-            
-            {/* Hero Content */}
-            <div className="relative z-10">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">
-                Bet on Sports with{' '}
-                <span className="text-[#F5B400]">Movement</span>
-              </h1>
-              <p className="text-zinc-400 text-lg sm:text-xl max-w-2xl mx-auto mb-8">
-                Decentralized sports betting powered by the Movement Network.
-                Fast, transparent, and secure.
-              </p>
-              <button className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-8 py-3 rounded-lg text-lg transition-colors duration-200">
-                Get Started
-              </button>
-            </div>
-          </section>
+          <Hero />
 
           {/* Markets Section */}
           <section id="markets" className="py-8">
