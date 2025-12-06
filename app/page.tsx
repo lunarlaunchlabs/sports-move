@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import { FaFootballBall, FaBasketballBall, FaBaseballBall, FaHockeyPuck, FaFutbol, FaLink, FaMoneyBillWave, FaTint, FaLock, FaDice } from 'react-icons/fa';
+import { FaFootballBall, FaBasketballBall, FaBaseballBall, FaHockeyPuck, FaFutbol, FaLink, FaMoneyBillWave, FaTint, FaLock, FaDice, FaDownload, FaGlobe } from 'react-icons/fa';
 import { FaMoneyBill1Wave } from 'react-icons/fa6';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import Confetti from 'react-confetti';
@@ -1566,20 +1566,44 @@ function FaucetSection({ isConnected, walletAddress, onConnect, onBalanceUpdate,
 }
 
 // Splash Screen Component
-function SplashScreen() {
+function SplashScreen({ isFadingOut }: { isFadingOut: boolean }) {
+  const [hasMounted, setHasMounted] = useState(false);
+  const [showTagline, setShowTagline] = useState(false);
+  
+  useEffect(() => {
+    // Trigger fade-in after mount
+    const mountTimer = setTimeout(() => setHasMounted(true), 50);
+    // Animate tagline in after logo appears
+    const taglineTimer = setTimeout(() => setShowTagline(true), 400);
+    
+    return () => {
+      clearTimeout(mountTimer);
+      clearTimeout(taglineTimer);
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center">
-      <Image
-        src="/SPORTS_MOVE_ENTRY_LOGO.png"
-        alt="Sports Move"
-        width={280}
-        height={280}
-        className="mb-8"
-        priority
-      />
-      <div className="flex items-center gap-3">
-        <div className="animate-spin h-5 w-5 border-2 border-[#F5B400] border-t-transparent rounded-full" />
-        <p className="text-zinc-400 text-lg">Checking connection...</p>
+    <div 
+      className={`fixed inset-0 z-50 bg-black flex items-center justify-center transition-opacity duration-500 ${
+        isFadingOut ? 'opacity-0 pointer-events-none' : hasMounted ? 'opacity-100' : 'opacity-0'
+      }`}
+    >
+      <div className="relative">
+        <Image
+          src="/SPORTS_MOVE_ENTRY_LOGO.png"
+          alt="Sports Move"
+          width={320}
+          height={320}
+          priority
+        />
+        {/* Tagline positioned over the black space in the logo */}
+        <p 
+          className={`absolute bottom-2 left-1/2 -translate-x-1/2 text-white text-xl font-bold tracking-widest uppercase transition-all duration-700 whitespace-nowrap ${
+            showTagline ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+        >
+          Get your <span className="text-[#F5B400]">move</span> on
+        </p>
       </div>
     </div>
   );
@@ -1600,27 +1624,13 @@ export default function SportsBook() {
   const [betsFilter, setBetsFilter] = useState<BetFilter>('all');
   const [betsViewMode, setBetsViewMode] = useState<BetViewMode>('tiles');
   const [loadingBets, setLoadingBets] = useState(false);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  const [showSplash, setShowSplash] = useState(true);
+  const [isSplashFading, setIsSplashFading] = useState(false);
+  const [isMainAppVisible, setIsMainAppVisible] = useState(false);
+  const hasInitialized = useRef(false);
 
   // Wallet hook
-  const { connected, account, connect, disconnect, wallets, signAndSubmitTransaction, isLoading: isWalletLoading } = useWallet();
-
-  // Check wallet connection status
-  useEffect(() => {
-    // Wait for wallet adapter to finish loading
-    if (!isWalletLoading) {
-      // Add a small delay for smoother UX
-      const timer = setTimeout(() => {
-        setIsCheckingConnection(false);
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [isWalletLoading]);
-
-  // Show splash screen while checking connection
-  if (isCheckingConnection) {
-    return <SplashScreen />;
-  }
+  const { connected, account, connect, disconnect, wallets, signAndSubmitTransaction } = useWallet();
 
   // Fetch smUSD balance
   const fetchSmUsdBalance = useCallback(async () => {
@@ -1670,6 +1680,26 @@ export default function SportsBook() {
       setLoadingBets(false);
     }
   }, [account?.address, betsFilter]);
+
+  // Initialize app after wallet adapter is ready
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+    
+    // Show splash screen for a minimum time, then cross-fade
+    const fadeTimer = setTimeout(() => {
+      // Start fading out splash and fading in main app simultaneously
+      setIsSplashFading(true);
+      setIsMainAppVisible(true);
+      
+      // Remove splash from DOM after fade completes
+      setTimeout(() => {
+        setShowSplash(false);
+      }, 500); // Match the CSS transition duration
+    }, 1200);
+    
+    return () => clearTimeout(fadeTimer);
+  }, []);
 
   // Fetch balance when wallet connects
   useEffect(() => {
@@ -1810,7 +1840,14 @@ export default function SportsBook() {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <>
+      {/* Splash Screen Overlay */}
+      {showSplash && <SplashScreen isFadingOut={isSplashFading} />}
+      
+      {/* Main App with fade-in */}
+      <div className={`min-h-screen bg-black transition-opacity duration-500 ${
+        isMainAppVisible ? 'opacity-100' : 'opacity-0'
+      }`}>
       <NavBar
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
@@ -1959,10 +1996,30 @@ export default function SportsBook() {
               How It Works
             </h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <a 
+                href="https://nightly.app/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200 block"
+              >
+                <div className="text-4xl mb-4"><FaDownload className="text-[#F5B400]" /></div>
+                <h3 className="text-xl font-semibold mb-2">Install Nightly Wallet</h3>
+                <p className="text-zinc-400">Download and install the Nightly wallet extension</p>
+              </a>
+              <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
+                <div className="text-4xl mb-4"><FaGlobe className="text-[#F5B400]" /></div>
+                <h3 className="text-xl font-semibold mb-2">Connect to Testnet</h3>
+                <p className="text-zinc-400">Switch to Movement Network testnet in your wallet</p>
+              </div>
               <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
                 <div className="text-4xl mb-4"><FaLink className="text-[#F5B400]" /></div>
                 <h3 className="text-xl font-semibold mb-2">Connect Wallet</h3>
                 <p className="text-zinc-400">Link your Movement wallet to get started</p>
+              </div>
+              <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
+                <div className="text-4xl mb-4"><FaTint className="text-[#F5B400]" /></div>
+                <h3 className="text-xl font-semibold mb-2">Fund smUSD</h3>
+                <p className="text-zinc-400">Register your address and mint yourself smUSD</p>
               </div>
               <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
                 <div className="text-4xl mb-4"><FaFootballBall className="text-[#F5B400]" /></div>
@@ -2016,7 +2073,8 @@ export default function SportsBook() {
           isPlacingBet={isPlacingBet}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
