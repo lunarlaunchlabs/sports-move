@@ -759,9 +759,10 @@ interface MarketCardProps {
   market: Market;
   onBetSelect: (market: Market, outcome: 'home' | 'away') => void;
   isWalletConnected: boolean;
+  isPolling?: boolean;
 }
 
-function MarketCard({ market, onBetSelect, isWalletConnected }: MarketCardProps) {
+function MarketCard({ market, onBetSelect, isWalletConnected, isPolling = false }: MarketCardProps) {
   const sportColor = getSportColor(market.sport_key);
   const isResolved = market.is_resolved;
   const isCancelled = market.is_cancelled;
@@ -802,7 +803,7 @@ function MarketCard({ market, onBetSelect, isWalletConnected }: MarketCardProps)
 
   const isLive = !isResolved && !isCancelled && hasStarted;
   const isOpen = !isResolved && !isCancelled && !hasStarted;
-  const canBet = (isOpen || isLive) && isWalletConnected;
+  const canBet = (isOpen || isLive) && isWalletConnected && !isPolling;
 
   const handleBetClick = (outcome: 'home' | 'away') => {
     if (!canBet) return;
@@ -860,40 +861,48 @@ function MarketCard({ market, onBetSelect, isWalletConnected }: MarketCardProps)
           <button
             onClick={() => handleBetClick('away')}
             disabled={!canBet}
-            className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${
+            className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 relative ${
               canBet
                 ? 'border-zinc-700 hover:border-[#F5B400] hover:bg-zinc-800 cursor-pointer'
                 : 'border-zinc-800 opacity-60 cursor-not-allowed'
             }`}
           >
             <span className="font-medium text-white">{market.away_team}</span>
-            <span
-              className={`font-bold text-lg ${
-                market.away_odds_positive ? 'text-green-400' : 'text-white'
-              }`}
-            >
-              {formatOdds(market.away_odds, market.away_odds_positive)}
-            </span>
+            {isPolling ? (
+              <span className="w-12 h-5 bg-zinc-700 rounded animate-pulse" />
+            ) : (
+              <span
+                className={`font-bold text-lg ${
+                  market.away_odds_positive ? 'text-green-400' : 'text-white'
+                }`}
+              >
+                {formatOdds(market.away_odds, market.away_odds_positive)}
+              </span>
+            )}
           </button>
 
           {/* Home Team */}
           <button
             onClick={() => handleBetClick('home')}
             disabled={!canBet}
-            className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${
+            className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 relative ${
               canBet
                 ? 'border-zinc-700 hover:border-[#F5B400] hover:bg-zinc-800 cursor-pointer'
                 : 'border-zinc-800 opacity-60 cursor-not-allowed'
             }`}
           >
             <span className="font-medium text-white">{market.home_team}</span>
-            <span
-              className={`font-bold text-lg ${
-                market.home_odds_positive ? 'text-green-400' : 'text-white'
-              }`}
-            >
-              {formatOdds(market.home_odds, market.home_odds_positive)}
-            </span>
+            {isPolling ? (
+              <span className="w-12 h-5 bg-zinc-700 rounded animate-pulse" />
+            ) : (
+              <span
+                className={`font-bold text-lg ${
+                  market.home_odds_positive ? 'text-green-400' : 'text-white'
+                }`}
+              >
+                {formatOdds(market.home_odds, market.home_odds_positive)}
+              </span>
+            )}
           </button>
         </div>
         
@@ -1911,6 +1920,78 @@ function SplashScreen({ isFadingOut }: { isFadingOut: boolean }) {
   );
 }
 
+// RefreshTimer Component - Floating countdown timer
+interface RefreshTimerProps {
+  secondsUntilRefresh: number;
+  isPolling: boolean;
+  onManualRefresh: () => void;
+}
+
+function RefreshTimer({ secondsUntilRefresh, isPolling, onManualRefresh }: RefreshTimerProps) {
+  const progress = ((60 - secondsUntilRefresh) / 60) * 100;
+  
+  return (
+    <div className="fixed bottom-4 right-4 z-40 flex items-center gap-2 bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-full px-3 py-2 shadow-lg">
+      {/* Circular Progress */}
+      <div className="relative w-8 h-8">
+        <svg className="w-8 h-8 -rotate-90" viewBox="0 0 32 32">
+          <circle
+            cx="16"
+            cy="16"
+            r="14"
+            fill="none"
+            stroke="#3f3f46"
+            strokeWidth="2"
+          />
+          <circle
+            cx="16"
+            cy="16"
+            r="14"
+            fill="none"
+            stroke="#F5B400"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray={`${progress * 0.88} 88`}
+            className="transition-all duration-1000 ease-linear"
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <svg className="w-4 h-4 text-[#F5B400]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+      </div>
+      
+      {/* Countdown Text */}
+      <span className="text-zinc-400 text-sm font-medium min-w-[32px]">
+        {isPolling ? '...' : `${secondsUntilRefresh}s`}
+      </span>
+      
+      {/* Manual Refresh Button */}
+      <button
+        onClick={onManualRefresh}
+        disabled={isPolling}
+        className="p-1.5 rounded-full hover:bg-zinc-700 transition-colors disabled:cursor-not-allowed"
+        title="Refresh now"
+      >
+        <svg 
+          className={`w-4 h-4 transition-colors ${isPolling ? 'text-[#F5B400] animate-spin' : 'text-zinc-400 hover:text-zinc-300'}`} 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor"
+        >
+          <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth={2} 
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+          />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 export default function SportsBook() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedSport, setSelectedSport] = useState<SportFilter>('all');
@@ -1932,6 +2013,13 @@ export default function SportsBook() {
   const [isSplashFading, setIsSplashFading] = useState(false);
   const [isMainAppVisible, setIsMainAppVisible] = useState(false);
   const hasInitialized = useRef(false);
+  
+  // Polling state
+  const [isPolling, setIsPolling] = useState(false);
+  const [secondsUntilRefresh, setSecondsUntilRefresh] = useState(60);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const previousMarketsRef = useRef<string>('');
 
   // Wallet hook
   const { connected, account, connect, disconnect, wallets, signAndSubmitTransaction } = useWallet();
@@ -2063,6 +2151,29 @@ export default function SportsBook() {
     });
   };
 
+  // Sync bet modal odds when markets update from polling
+  useEffect(() => {
+    if (!betSelection) return;
+    
+    // Find the updated market
+    const updatedMarket = markets.find(m => m.game_id === betSelection.market.game_id);
+    if (!updatedMarket) return;
+    
+    // Get the new odds based on the selected outcome
+    const newOdds = betSelection.outcome === 'home' ? updatedMarket.home_odds : updatedMarket.away_odds;
+    const newOddsPositive = betSelection.outcome === 'home' ? updatedMarket.home_odds_positive : updatedMarket.away_odds_positive;
+    
+    // Only update if odds actually changed
+    if (newOdds !== betSelection.odds || newOddsPositive !== betSelection.oddsPositive) {
+      setBetSelection(prev => prev ? {
+        ...prev,
+        market: updatedMarket,
+        odds: newOdds,
+        oddsPositive: newOddsPositive,
+      } : null);
+    }
+  }, [markets, betSelection]);
+
   // Handle placing bet on contract
   const handlePlaceBet = async (amount: number) => {
     if (!betSelection || !account?.address) {
@@ -2122,6 +2233,79 @@ export default function SportsBook() {
     fetchMarkets();
     setCurrentPage(1);
   }, [marketFilter, selectedSport]);
+
+  // Poll all data (markets, bets, balance) without full reload
+  const pollData = useCallback(async () => {
+    setIsPolling(true);
+    const startTime = Date.now();
+    
+    try {
+      // Fetch all data in parallel
+      const [marketsResponse] = await Promise.all([
+        fetch(`/api/get-markets?filter=${marketFilter}&competition=${selectedSport}`),
+        connected && account?.address ? fetchSmUsdBalance() : Promise.resolve(),
+        connected && account?.address ? fetchUserBets() : Promise.resolve(),
+      ]);
+      
+      const marketsData = await marketsResponse.json();
+      const newMarkets = marketsData.markets || [];
+      
+      // Only update markets if data changed (prevents unnecessary re-renders)
+      const newMarketsJson = JSON.stringify(newMarkets);
+      if (newMarketsJson !== previousMarketsRef.current) {
+        previousMarketsRef.current = newMarketsJson;
+        setMarkets(newMarkets);
+      }
+    } catch (error) {
+      console.error('Failed to poll data:', error);
+    } finally {
+      // Ensure minimum 800ms animation time for visual feedback
+      const elapsed = Date.now() - startTime;
+      const minTime = 800;
+      if (elapsed < minTime) {
+        await new Promise(resolve => setTimeout(resolve, minTime - elapsed));
+      }
+      setIsPolling(false);
+    }
+  }, [marketFilter, selectedSport, connected, account?.address, fetchSmUsdBalance, fetchUserBets]);
+
+  // Helper to start/restart the polling interval
+  const startPollInterval = useCallback(() => {
+    // Clear existing interval if any
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+    // Start new 60-second interval
+    pollIntervalRef.current = setInterval(() => {
+      pollData();
+      setSecondsUntilRefresh(60);
+    }, 60000);
+  }, [pollData]);
+
+  // Manual refresh handler - resets the interval
+  const handleManualRefresh = useCallback(() => {
+    if (isPolling) return;
+    pollData();
+    setSecondsUntilRefresh(60);
+    startPollInterval(); // Reset the interval timer
+  }, [isPolling, pollData, startPollInterval]);
+
+  // Polling interval - runs every 60 seconds
+  useEffect(() => {
+    // Start countdown timer (updates every second)
+    countdownRef.current = setInterval(() => {
+      setSecondsUntilRefresh(prev => (prev <= 1 ? 60 : prev - 1));
+    }, 1000);
+
+    // Start the polling interval
+    startPollInterval();
+
+    // Cleanup on unmount
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
+  }, [startPollInterval]);
 
   // Filter markets by team search and sort by date
   const filteredMarkets = markets.filter(market => {
@@ -2296,6 +2480,7 @@ export default function SportsBook() {
                     market={market} 
                     onBetSelect={handleBetSelect}
                     isWalletConnected={connected}
+                    isPolling={isPolling}
                   />
                 ))
               )}
@@ -2469,6 +2654,13 @@ export default function SportsBook() {
           isPlacingBet={isPlacingBet}
         />
       )}
+
+      {/* Refresh Timer */}
+      <RefreshTimer
+        secondsUntilRefresh={secondsUntilRefresh}
+        isPolling={isPolling}
+        onManualRefresh={handleManualRefresh}
+      />
       </div>
     </>
   );
