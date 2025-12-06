@@ -1,6 +1,7 @@
 import { MarketData, ScoreData, SPORT_MARKET_KEY } from '@/app/types';
 
-const API_KEY = "96f436c2212b56604ba2f2ba4f2e5a40";
+// const API_KEY = "96f436c2212b56604ba2f2ba4f2e5a40";
+const API_KEY_5_MILLION_PER_MONTH = '90c8987732fc1f15372c6852892af9de';
 const BASE_URL = "https://api.the-odds-api.com/v4/sports";
 
 export class TheOddsApi {
@@ -10,7 +11,7 @@ export class TheOddsApi {
    * @returns Array of market data with bookmaker odds
    */
   static async getMarkets(sport: SPORT_MARKET_KEY): Promise<MarketData[]> {
-    const url = `${BASE_URL}/${sport}/odds?regions=us&oddsFormat=american&apiKey=${API_KEY}`;
+    const url = `${BASE_URL}/${sport}/odds?regions=us&oddsFormat=american&apiKey=${API_KEY_5_MILLION_PER_MONTH}`;
     
     const response = await fetch(url);
     
@@ -29,7 +30,7 @@ export class TheOddsApi {
    * @returns Array of score data for recent games
    */
   static async getScores(sport: SPORT_MARKET_KEY): Promise<ScoreData[]> {
-    const url = `${BASE_URL}/${sport}/scores/?daysFrom=1&apiKey=${API_KEY}`;
+    const url = `${BASE_URL}/${sport}/scores/?daysFrom=1&apiKey=${API_KEY_5_MILLION_PER_MONTH}`;
     
     const response = await fetch(url);
     
