@@ -42,9 +42,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Move build artifacts
-move/build/
-
 # Private keys and wallet configuration
 config/admin-wallets.json
 *.key

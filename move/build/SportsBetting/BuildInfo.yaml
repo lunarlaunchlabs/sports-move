@@ -28,7 +28,7 @@ compiled_package_info:
     fetch_deps_only: false
     skip_fetch_latest_git_deps: true
     compiler_config:
-      bytecode_version: 8
+      bytecode_version: 7
       known_attributes:
         - bytecode_instruction
         - deprecated
@@ -51,10 +51,9 @@ compiled_package_info:
         - view
       skip_attribute_checks: false
       compiler_version: V2_0
-      language_version: "2.2"
+      language_version: "2.1"
       experiments:
         - optimize=on
-      print_errors: true
 dependencies:
   - AptosFramework
   - AptosStdlib
