@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import { FaFootballBall, FaBasketballBall, FaBaseballBall, FaHockeyPuck, FaFutbol, FaLink, FaMoneyBillWave, FaTint, FaLock, FaDice, FaDownload, FaGlobe } from 'react-icons/fa';
+import { FaFootballBall, FaBasketballBall, FaBaseballBall, FaHockeyPuck, FaFutbol, FaLink, FaMoneyBillWave, FaTint, FaLock, FaDice, FaDownload, FaGlobe, FaSearch, FaChevronLeft, FaChevronRight, FaTwitter, FaDiscord, FaGithub } from 'react-icons/fa';
 import { FaMoneyBill1Wave } from 'react-icons/fa6';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import Confetti from 'react-confetti';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 /**
  * Main App Color: #000000
@@ -57,6 +58,7 @@ interface Bet {
   odds_positive: boolean; // true = positive odds (+), false = negative odds (-)
   potential_payout: string;
   is_settled: boolean;
+  is_cancelled: boolean;
   timestamp: string;
 }
 
@@ -761,8 +763,46 @@ interface MarketCardProps {
 
 function MarketCard({ market, onBetSelect, isWalletConnected }: MarketCardProps) {
   const sportColor = getSportColor(market.sport_key);
-  const isLive = !market.is_resolved && !market.is_cancelled;
-  const canBet = isLive && isWalletConnected;
+  const isResolved = market.is_resolved;
+  const isCancelled = market.is_cancelled;
+  const commenceTime = parseInt(market.commence_time) * 1000;
+  const [countdown, setCountdown] = useState('');
+  const [hasStarted, setHasStarted] = useState(false);
+
+  // Countdown timer effect
+  useEffect(() => {
+    const updateCountdown = () => {
+      const now = Date.now();
+      const diff = commenceTime - now;
+
+      if (diff <= 0) {
+        setHasStarted(true);
+        setCountdown('');
+        return;
+      }
+
+      setHasStarted(false);
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      if (days > 0) {
+        setCountdown(`${days}d ${hours}h`);
+      } else if (hours > 0) {
+        setCountdown(`${hours}h ${minutes}m`);
+      } else {
+        setCountdown(`${minutes}m`);
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, [commenceTime]);
+
+  const isLive = !isResolved && !isCancelled && hasStarted;
+  const isOpen = !isResolved && !isCancelled && !hasStarted;
+  const canBet = (isOpen || isLive) && isWalletConnected;
 
   const handleBetClick = (outcome: 'home' | 'away') => {
     if (!canBet) return;
@@ -772,7 +812,7 @@ function MarketCard({ market, onBetSelect, isWalletConnected }: MarketCardProps)
   return (
     <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden hover:border-zinc-700 transition-colors duration-200">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <span
             className="text-xs font-bold px-2 py-1 rounded flex items-center gap-1.5"
@@ -784,18 +824,29 @@ function MarketCard({ market, onBetSelect, isWalletConnected }: MarketCardProps)
           <span className="text-zinc-400 text-sm">
             {formatDate(market.commence_time)}
           </span>
+          {countdown && isOpen && (
+            <span className="text-xs text-[#F5B400] font-medium">
+              Starts in {countdown}
+            </span>
+          )}
         </div>
-        {market.is_resolved && (
+        {isResolved && (
           <span className="text-xs font-medium px-2 py-1 rounded bg-green-600 text-white">
             Final: {market.winning_outcome}
           </span>
         )}
-        {market.is_cancelled && (
+        {isCancelled && (
           <span className="text-xs font-medium px-2 py-1 rounded bg-red-600 text-white">
             Cancelled
           </span>
         )}
         {isLive && (
+          <span className="text-xs font-bold text-white flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            Live
+          </span>
+        )}
+        {isOpen && (
           <span className="text-xs font-medium px-2 py-1 rounded bg-[#F5B400] text-black">
             Open
           </span>
@@ -847,7 +898,7 @@ function MarketCard({ market, onBetSelect, isWalletConnected }: MarketCardProps)
         </div>
         
         {/* Connect wallet hint */}
-        {isLive && !isWalletConnected && (
+        {(isOpen || isLive) && !isWalletConnected && (
           <p className="text-zinc-500 text-xs text-center mt-3">
             Connect wallet to place bets
           </p>
@@ -869,6 +920,134 @@ function MarketCardSkeleton() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="h-14 bg-zinc-800 rounded-lg" />
           <div className="h-14 bg-zinc-800 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// User Stats Component
+interface UserStatsProps {
+  bets: Bet[];
+  isConnected: boolean;
+}
+
+const CHART_COLORS = ['#22c55e', '#ef4444'];
+
+function UserStats({ bets, isConnected }: UserStatsProps) {
+  if (!isConnected || bets.length === 0) return null;
+
+  const totalBets = bets.length;
+  const activeBets = bets.filter(b => !b.is_settled).length;
+  const settledBets = bets.filter(b => b.is_settled).length;
+  
+  // Calculate totals
+  const totalWagered = bets.reduce((sum, b) => sum + parseInt(b.amount), 0) / 100_000_000;
+  const totalPotentialPayout = bets.reduce((sum, b) => sum + parseInt(b.potential_payout), 0) / 100_000_000;
+  
+  // Win/Loss data for pie chart (based on settled bets)
+  // For now, we'll use active vs settled as a proxy since we don't have win/loss tracking
+  const pieData = [
+    { name: 'Active', value: activeBets },
+    { name: 'Settled', value: settledBets },
+  ];
+
+  // Bar chart data
+  const barData = [
+    { name: 'Wagered', amount: totalWagered },
+    { name: 'Potential', amount: totalPotentialPayout },
+  ];
+
+  return (
+    <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 mb-6">
+      <h3 className="text-lg font-bold text-white mb-4">Your Stats</h3>
+      
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <div className="bg-zinc-800/50 rounded-lg p-3">
+          <p className="text-zinc-400 text-xs">Total Bets</p>
+          <p className="text-xl font-bold text-white">{totalBets}</p>
+        </div>
+        <div className="bg-zinc-800/50 rounded-lg p-3">
+          <p className="text-zinc-400 text-xs">Active Bets</p>
+          <p className="text-xl font-bold text-blue-400">{activeBets}</p>
+        </div>
+        <div className="bg-zinc-800/50 rounded-lg p-3">
+          <p className="text-zinc-400 text-xs">Total Wagered</p>
+          <p className="text-xl font-bold text-[#F5B400]">{totalWagered.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+        </div>
+        <div className="bg-zinc-800/50 rounded-lg p-3">
+          <p className="text-zinc-400 text-xs">Potential ROI</p>
+          <p className="text-xl font-bold text-green-400">
+            {totalWagered > 0 ? ((totalPotentialPayout / totalWagered - 1) * 100).toFixed(1) : 0}%
+          </p>
+        </div>
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Pie Chart - Bet Status */}
+        <div className="bg-zinc-800/30 rounded-lg p-3">
+          <h4 className="text-xs font-medium text-zinc-400 mb-2">Bet Status</h4>
+          <div className="h-24">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={20}
+                  outerRadius={35}
+                  paddingAngle={2}
+                  label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                  labelLine={false}
+                >
+                  <Cell fill="#3b82f6" />
+                  <Cell fill="#22c55e" />
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px' }}
+                  itemStyle={{ color: '#fff' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex justify-center gap-4 mt-1">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-blue-500" />
+              <span className="text-xs text-zinc-400">Active</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <span className="text-xs text-zinc-400">Settled</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bar Chart - Amounts */}
+        <div className="bg-zinc-800/30 rounded-lg p-3">
+          <h4 className="text-xs font-medium text-zinc-400 mb-2">Amount Overview</h4>
+          <div className="h-24">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={barData} layout="vertical">
+                <XAxis type="number" hide />
+                <YAxis 
+                  type="category" 
+                  dataKey="name" 
+                  tick={{ fill: '#a1a1aa', fontSize: 10 }}
+                  width={55}
+                />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px' }}
+                  itemStyle={{ color: '#fff' }}
+                  formatter={(value: number) => [`${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} smUSD`, '']}
+                />
+                <Bar dataKey="amount" fill="#F5B400" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>
@@ -968,6 +1147,9 @@ interface MyBetsSectionProps {
   onConnect: () => void;
 }
 
+const BETS_TABLE_PER_PAGE = 10;
+const BETS_CARDS_PER_PAGE = 6;
+
 function MyBetsSection({
   bets,
   loading,
@@ -980,6 +1162,13 @@ function MyBetsSection({
   isConnected,
   onConnect,
 }: MyBetsSectionProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset page when filter, sort, or view mode changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, sort, viewMode]);
+
   // Format helpers
   const formatBetAmount = (amount: string) => {
     return (parseInt(amount) / 100_000_000).toLocaleString(undefined, { 
@@ -1001,14 +1190,27 @@ function MyBetsSection({
     });
   };
 
-  const getBetStatusColor = (bet: Bet) => {
-    if (bet.is_settled) return 'bg-green-600';
-    return 'bg-blue-600';
-  };
-
-  const getBetStatusText = (bet: Bet) => {
-    if (bet.is_settled) return 'Settled';
-    return 'Active';
+  const renderBetStatus = (bet: Bet) => {
+    if (bet.is_cancelled) {
+      return (
+        <span className="text-xs font-bold text-red-400">
+          Cancelled
+        </span>
+      );
+    }
+    if (bet.is_settled) {
+      return (
+        <span className="text-xs font-bold text-white">
+          Settled
+        </span>
+      );
+    }
+    return (
+      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+        Active
+      </span>
+    );
   };
 
   // Sort bets based on selected sort option
@@ -1030,6 +1232,14 @@ function MyBetsSection({
         return 0;
     }
   });
+
+  // Pagination calculations
+  const itemsPerPage = viewMode === 'table' ? BETS_TABLE_PER_PAGE : BETS_CARDS_PER_PAGE;
+  const totalPages = Math.ceil(sortedBets.length / itemsPerPage);
+  const paginatedBets = sortedBets.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   // Not connected state
   if (!isConnected) {
@@ -1134,101 +1344,143 @@ function MyBetsSection({
         </div>
       )}
 
-      {/* Tiles View */}
+      {/* Tiles View with Arrow Pagination */}
       {!loading && sortedBets.length > 0 && viewMode === 'tiles' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sortedBets.map((bet) => (
-            <div
-              key={bet.bet_id}
-              className="bg-zinc-900 rounded-lg border border-zinc-800 p-4 hover:border-zinc-700 transition-colors"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs text-zinc-500">Bet #{bet.bet_id}</span>
-                <span className={`text-xs font-medium px-2 py-1 rounded ${getBetStatusColor(bet)} text-white`}>
-                  {getBetStatusText(bet)}
-                </span>
-              </div>
+        <div className="flex items-center gap-4">
+          {/* Left Arrow */}
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="shrink-0 w-10 h-10 rounded-full bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+          >
+            <FaChevronLeft className="text-white" />
+          </button>
 
-              {/* Pick */}
-              <div className="mb-3">
-                <p className="text-zinc-400 text-xs mb-1">Your Pick</p>
-                <p className="text-white font-semibold text-lg">{bet.outcome}</p>
-              </div>
-
-              {/* Odds & Amount */}
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                  <p className="text-zinc-400 text-xs mb-1">Odds</p>
-                  <p className={`font-bold ${bet.odds_positive ? 'text-green-400' : 'text-white'}`}>
-                    {formatBetOdds(bet.odds, bet.odds_positive)}
-                  </p>
+          {/* Cards Grid */}
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paginatedBets.map((bet) => (
+              <div
+                key={bet.bet_id}
+                className="bg-zinc-900 rounded-lg border border-zinc-800 p-4 hover:border-zinc-700 transition-colors"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs text-zinc-500">Bet #{bet.bet_id}</span>
+                  {renderBetStatus(bet)}
                 </div>
-                <div>
-                  <p className="text-zinc-400 text-xs mb-1">Stake</p>
-                  <p className="text-white font-medium">{formatBetAmount(bet.amount)} smUSD</p>
-                </div>
-              </div>
 
-              {/* Potential Payout */}
-              <div className="bg-zinc-800/50 rounded-lg p-3 mb-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-zinc-400 text-sm">Potential Payout</span>
-                  <span className="text-green-400 font-bold">{formatBetAmount(bet.potential_payout)} smUSD</span>
+                {/* Pick */}
+                <div className="mb-3">
+                  <p className="text-zinc-400 text-xs mb-1">Your Pick</p>
+                  <p className="text-white font-semibold text-lg">{bet.outcome}</p>
                 </div>
-              </div>
 
-              {/* Timestamp */}
-              <p className="text-zinc-500 text-xs text-right">{formatBetDate(bet.timestamp)}</p>
-            </div>
-          ))}
+                {/* Odds & Amount */}
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <p className="text-zinc-400 text-xs mb-1">Odds</p>
+                    <p className={`font-bold ${bet.odds_positive ? 'text-green-400' : 'text-white'}`}>
+                      {formatBetOdds(bet.odds, bet.odds_positive)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-zinc-400 text-xs mb-1">Stake</p>
+                    <p className="text-white font-medium">{formatBetAmount(bet.amount)} smUSD</p>
+                  </div>
+                </div>
+
+                {/* Potential Payout */}
+                <div className="bg-zinc-800/50 rounded-lg p-3 mb-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400 text-sm">Potential Payout</span>
+                    <span className="text-green-400 font-bold">{formatBetAmount(bet.potential_payout)} smUSD</span>
+                  </div>
+                </div>
+
+                {/* Timestamp */}
+                <p className="text-zinc-500 text-xs text-right">{formatBetDate(bet.timestamp)}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Right Arrow */}
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="shrink-0 w-10 h-10 rounded-full bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+          >
+            <FaChevronRight className="text-white" />
+          </button>
         </div>
       )}
 
       {/* Table View */}
       {!loading && sortedBets.length > 0 && viewMode === 'table' && (
-        <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-zinc-800">
-                  <th className="text-left text-zinc-400 text-sm font-medium px-4 py-3">Bet ID</th>
-                  <th className="text-left text-zinc-400 text-sm font-medium px-4 py-3">Pick</th>
-                  <th className="text-left text-zinc-400 text-sm font-medium px-4 py-3">Odds</th>
-                  <th className="text-right text-zinc-400 text-sm font-medium px-4 py-3">Stake</th>
-                  <th className="text-right text-zinc-400 text-sm font-medium px-4 py-3">Potential</th>
-                  <th className="text-center text-zinc-400 text-sm font-medium px-4 py-3">Status</th>
-                  <th className="text-right text-zinc-400 text-sm font-medium px-4 py-3">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedBets.map((bet) => (
-                  <tr key={bet.bet_id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
-                    <td className="px-4 py-3 text-zinc-500 text-sm">#{bet.bet_id}</td>
-                    <td className="px-4 py-3 text-white font-medium">{bet.outcome}</td>
-                    <td className={`px-4 py-3 font-bold ${bet.odds_positive ? 'text-green-400' : 'text-white'}`}>
-                      {formatBetOdds(bet.odds, bet.odds_positive)}
-                    </td>
-                    <td className="px-4 py-3 text-white text-right">{formatBetAmount(bet.amount)}</td>
-                    <td className="px-4 py-3 text-green-400 font-medium text-right">{formatBetAmount(bet.potential_payout)}</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`text-xs font-medium px-2 py-1 rounded ${getBetStatusColor(bet)} text-white`}>
-                        {getBetStatusText(bet)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-zinc-500 text-sm text-right">{formatBetDate(bet.timestamp)}</td>
+        <>
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px]">
+                <thead>
+                  <tr className="border-b border-zinc-800">
+                    <th className="text-left text-zinc-400 text-sm font-medium px-4 py-3 min-w-[80px]">Bet ID</th>
+                    <th className="text-left text-zinc-400 text-sm font-medium px-4 py-3 min-w-[120px]">Pick</th>
+                    <th className="text-left text-zinc-400 text-sm font-medium px-4 py-3 min-w-[80px]">Odds</th>
+                    <th className="text-right text-zinc-400 text-sm font-medium px-4 py-3 min-w-[100px]">Stake</th>
+                    <th className="text-right text-zinc-400 text-sm font-medium px-4 py-3 min-w-[100px]">Potential</th>
+                    <th className="text-center text-zinc-400 text-sm font-medium px-4 py-3 min-w-[80px]">Status</th>
+                    <th className="text-right text-zinc-400 text-sm font-medium px-4 py-3 min-w-[120px]">Date</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {paginatedBets.map((bet) => (
+                    <tr key={bet.bet_id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                      <td className="px-4 py-3 text-zinc-500 text-sm">#{bet.bet_id}</td>
+                      <td className="px-4 py-3 text-white font-medium">{bet.outcome}</td>
+                      <td className={`px-4 py-3 font-bold ${bet.odds_positive ? 'text-green-400' : 'text-white'}`}>
+                        {formatBetOdds(bet.odds, bet.odds_positive)}
+                      </td>
+                      <td className="px-4 py-3 text-white text-right">{formatBetAmount(bet.amount)}</td>
+                      <td className="px-4 py-3 text-green-400 font-medium text-right">{formatBetAmount(bet.potential_payout)}</td>
+                      <td className="px-4 py-3 flex justify-center">
+                        {renderBetStatus(bet)}
+                      </td>
+                      <td className="px-4 py-3 text-zinc-500 text-sm text-right whitespace-nowrap">{formatBetDate(bet.timestamp)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+
+          {/* Table Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-2 rounded-lg bg-zinc-800 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-700 transition-colors"
+              >
+                Previous
+              </button>
+              <span className="px-4 py-2 text-zinc-400">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-2 rounded-lg bg-zinc-800 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-700 transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Bet Count */}
       {!loading && sortedBets.length > 0 && (
         <p className="text-zinc-500 text-sm text-right">
-          Showing {sortedBets.length} bet{sortedBets.length !== 1 ? 's' : ''}
+          Showing {paginatedBets.length} of {sortedBets.length} bet{sortedBets.length !== 1 ? 's' : ''}
         </p>
       )}
     </div>
@@ -1675,6 +1927,7 @@ export default function SportsBook() {
   const [betsSort, setBetsSort] = useState<BetSort>('date-desc');
   const [betsViewMode, setBetsViewMode] = useState<BetViewMode>('tiles');
   const [loadingBets, setLoadingBets] = useState(false);
+  const [teamSearch, setTeamSearch] = useState('');
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashFading, setIsSplashFading] = useState(false);
   const [isMainAppVisible, setIsMainAppVisible] = useState(false);
@@ -1870,8 +2123,15 @@ export default function SportsBook() {
     setCurrentPage(1);
   }, [marketFilter, selectedSport]);
 
-  // Sort markets by date
-  const sortedMarkets = [...markets].sort((a, b) => {
+  // Filter markets by team search and sort by date
+  const filteredMarkets = markets.filter(market => {
+    if (!teamSearch.trim()) return true;
+    const search = teamSearch.toLowerCase();
+    return market.home_team.toLowerCase().includes(search) || 
+           market.away_team.toLowerCase().includes(search);
+  });
+
+  const sortedMarkets = [...filteredMarkets].sort((a, b) => {
     const dateA = parseInt(a.commence_time);
     const dateB = parseInt(b.commence_time);
     return dateSort === 'soonest' ? dateA - dateB : dateB - dateA;
@@ -1883,6 +2143,11 @@ export default function SportsBook() {
     (currentPage - 1) * MARKETS_PER_PAGE,
     currentPage * MARKETS_PER_PAGE
   );
+
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [teamSearch]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -1921,8 +2186,28 @@ export default function SportsBook() {
                 Available Markets
               </h2>
               <div className="text-sm text-zinc-400">
-                {!loading && `${markets.length} market${markets.length !== 1 ? 's' : ''} found`}
+                {!loading && `${sortedMarkets.length} market${sortedMarkets.length !== 1 ? 's' : ''} found`}
               </div>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative mb-6">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+              <input
+                type="text"
+                value={teamSearch}
+                onChange={(e) => setTeamSearch(e.target.value)}
+                placeholder="Search by team name..."
+                className="w-full sm:w-80 bg-zinc-800 border border-zinc-700 rounded-lg pl-11 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#F5B400] focus:border-transparent"
+              />
+              {teamSearch && (
+                <button
+                  onClick={() => setTeamSearch('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
             {/* Filter Tabs Row */}
@@ -2030,6 +2315,7 @@ export default function SportsBook() {
             <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4">
               My Bets
             </h2>
+            <UserStats bets={userBets} isConnected={connected} />
             <MyBetsSection
               bets={userBets}
               loading={loadingBets}
@@ -2098,19 +2384,76 @@ export default function SportsBook() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-zinc-800 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <Image
-              src="/SPORTS_MOVE_LOGO.png"
-              alt="Sports Move Logo"
-              width={140}
-              height={32}
-              className="h-6 w-auto"
-            />
+      {/* Professional Footer */}
+      <footer className="border-t border-zinc-800 mt-12 bg-zinc-900/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+            {/* Brand Column */}
+            <div className="lg:col-span-1">
+              <Image
+                src="/SPORTS_MOVE_LOGO.png"
+                alt="Sports Move Logo"
+                width={160}
+                height={40}
+                className="h-8 w-auto mb-4"
+              />
+              <p className="text-zinc-400 text-sm mb-4">
+                Decentralized sports betting powered by the Movement Network. 
+                Fair, transparent, and on-chain.
+              </p>
+              <div className="flex gap-4">
+                <a href="#" className="text-zinc-500 hover:text-[#F5B400] transition-colors">
+                  <FaTwitter size={20} />
+                </a>
+                <a href="#" className="text-zinc-500 hover:text-[#F5B400] transition-colors">
+                  <FaDiscord size={20} />
+                </a>
+                <a href="#" className="text-zinc-500 hover:text-[#F5B400] transition-colors">
+                  <FaGithub size={20} />
+                </a>
+              </div>
+            </div>
+
+            {/* Navigation Column */}
+            <div>
+              <h4 className="text-white font-semibold mb-4">Navigation</h4>
+              <ul className="space-y-2">
+                <li><a href="#markets" className="text-zinc-400 hover:text-white transition-colors text-sm">Markets</a></li>
+                <li><a href="#my-bets" className="text-zinc-400 hover:text-white transition-colors text-sm">My Bets</a></li>
+                <li><a href="#how-it-works" className="text-zinc-400 hover:text-white transition-colors text-sm">How It Works</a></li>
+                <li><a href="#faucet" className="text-zinc-400 hover:text-white transition-colors text-sm">Get smUSD</a></li>
+              </ul>
+            </div>
+
+            {/* Resources Column */}
+            <div>
+              <h4 className="text-white font-semibold mb-4">Resources</h4>
+              <ul className="space-y-2">
+                <li><a href="https://nightly.app/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm">Nightly Wallet</a></li>
+                <li><a href="https://explorer.movementnetwork.xyz/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm">Block Explorer</a></li>
+                <li><a href="https://movementnetwork.xyz/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm">Movement Network</a></li>
+              </ul>
+            </div>
+
+            {/* Sports Column */}
+            <div>
+              <h4 className="text-white font-semibold mb-4">Supported Sports</h4>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2 text-zinc-400 text-sm"><FaFootballBall className="text-orange-500" /> NFL</li>
+                <li className="flex items-center gap-2 text-zinc-400 text-sm"><FaBasketballBall className="text-orange-400" /> NBA</li>
+                <li className="flex items-center gap-2 text-zinc-400 text-sm"><FaHockeyPuck className="text-blue-400" /> NHL</li>
+                <li className="flex items-center gap-2 text-zinc-400 text-sm"><FaBaseballBall className="text-red-500" /> MLB</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="border-t border-zinc-800 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-zinc-500 text-sm">
-              © 2025 Sports Move. Powered by Movement Network.
+              © 2025 Sports Move. All rights reserved.
+            </p>
+            <p className="text-zinc-500 text-sm">
+              Built on <span className="text-[#F5B400]">Movement Network</span> Testnet
             </p>
           </div>
         </div>
