@@ -228,18 +228,32 @@ module sports_betting::sports_betting {
         
         if (found) {
             // Market exists - check if resolved or cancelled
-            let market = vector::borrow_mut(&mut state.markets, index);
-            if (market.is_resolved || market.is_cancelled) {
+            let old_market = vector::borrow(&state.markets, index);
+            if (old_market.is_resolved || old_market.is_cancelled) {
                 // Ignore update for resolved/cancelled markets
                 return
             };
             
-            // Update odds fields only
-            market.home_odds = home_odds;
-            market.home_odds_positive = home_odds_positive;
-            market.away_odds = away_odds;
-            market.away_odds_positive = away_odds_positive;
-            market.odds_last_update = timestamp::now_seconds();
+            // Remove old market and create updated version
+            // (borrow_mut pattern doesn't persist, so we explicitly replace)
+            let old_market = vector::swap_remove(&mut state.markets, index);
+            let updated_market = Market {
+                game_id: old_market.game_id,
+                sport_key: old_market.sport_key,
+                sport_title: old_market.sport_title,
+                home_team: old_market.home_team,
+                away_team: old_market.away_team,
+                commence_time: old_market.commence_time,
+                home_odds,
+                home_odds_positive,
+                away_odds,
+                away_odds_positive,
+                odds_last_update: timestamp::now_seconds(),
+                is_resolved: old_market.is_resolved,
+                is_cancelled: old_market.is_cancelled,
+                winning_outcome: old_market.winning_outcome,
+            };
+            vector::push_back(&mut state.markets, updated_market);
         } else {
             // Create new market
             let market = Market {
