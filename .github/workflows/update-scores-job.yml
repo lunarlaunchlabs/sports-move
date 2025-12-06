@@ -8,7 +8,7 @@ on:
     # Allow manual trigger from GitHub UI
 
 concurrency:
-  group: sports-move-blockchain-jobs
+  group: sports-move-scores
   cancel-in-progress: false
 
 env:
