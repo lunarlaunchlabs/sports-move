@@ -173,7 +173,9 @@ export class SportsBettingContract {
       
       // Determine winning team
       let winningOutcome: string;
-      
+      if (!score.completed) {
+        throw new Error('Matchup is not completed yet');
+      }
       if (score.scores && score.scores.length === 2) {
         const homeScore = score.scores.find(s => s.name === score.home_team);
         const awayScore = score.scores.find(s => s.name === score.away_team);
