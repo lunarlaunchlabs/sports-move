@@ -62,12 +62,22 @@ interface Bet {
 
 type BetFilter = 'all' | 'active' | 'resolved' | 'cancelled';
 type BetViewMode = 'table' | 'tiles';
+type BetSort = 'date-desc' | 'date-asc' | 'stake-desc' | 'stake-asc' | 'payout-desc' | 'payout-asc';
 
 const betFilterOptions: { key: BetFilter; label: string }[] = [
   { key: 'all', label: 'All Bets' },
   { key: 'active', label: 'Active' },
   { key: 'resolved', label: 'Resolved' },
   { key: 'cancelled', label: 'Cancelled' },
+];
+
+const betSortOptions: { key: BetSort; label: string }[] = [
+  { key: 'date-desc', label: 'Newest First' },
+  { key: 'date-asc', label: 'Oldest First' },
+  { key: 'stake-desc', label: 'Highest Stake' },
+  { key: 'stake-asc', label: 'Lowest Stake' },
+  { key: 'payout-desc', label: 'Highest Payout' },
+  { key: 'payout-asc', label: 'Lowest Payout' },
 ];
 
 const MARKETS_PER_PAGE = 10;
@@ -950,6 +960,8 @@ interface MyBetsSectionProps {
   loading: boolean;
   filter: BetFilter;
   onFilterChange: (filter: BetFilter) => void;
+  sort: BetSort;
+  onSortChange: (sort: BetSort) => void;
   viewMode: BetViewMode;
   onViewModeChange: (mode: BetViewMode) => void;
   isConnected: boolean;
@@ -961,6 +973,8 @@ function MyBetsSection({
   loading,
   filter,
   onFilterChange,
+  sort,
+  onSortChange,
   viewMode,
   onViewModeChange,
   isConnected,
@@ -997,6 +1011,26 @@ function MyBetsSection({
     return 'Active';
   };
 
+  // Sort bets based on selected sort option
+  const sortedBets = [...bets].sort((a, b) => {
+    switch (sort) {
+      case 'date-desc':
+        return parseInt(b.timestamp) - parseInt(a.timestamp);
+      case 'date-asc':
+        return parseInt(a.timestamp) - parseInt(b.timestamp);
+      case 'stake-desc':
+        return parseInt(b.amount) - parseInt(a.amount);
+      case 'stake-asc':
+        return parseInt(a.amount) - parseInt(b.amount);
+      case 'payout-desc':
+        return parseInt(b.potential_payout) - parseInt(a.potential_payout);
+      case 'payout-asc':
+        return parseInt(a.potential_payout) - parseInt(b.potential_payout);
+      default:
+        return 0;
+    }
+  });
+
   // Not connected state
   if (!isConnected) {
     return (
@@ -1018,20 +1052,36 @@ function MyBetsSection({
     <div className="space-y-4">
       {/* Controls Row */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        {/* Filter Dropdown */}
-        <div className="flex items-center gap-3">
-          <label className="text-zinc-400 text-sm">Filter:</label>
-          <select
-            value={filter}
-            onChange={(e) => onFilterChange(e.target.value as BetFilter)}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#F5B400] focus:border-transparent"
-          >
-            {betFilterOptions.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+        {/* Filter & Sort Dropdowns */}
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-zinc-400 text-sm">Filter:</label>
+            <select
+              value={filter}
+              onChange={(e) => onFilterChange(e.target.value as BetFilter)}
+              className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#F5B400] focus:border-transparent"
+            >
+              {betFilterOptions.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-zinc-400 text-sm">Sort:</label>
+            <select
+              value={sort}
+              onChange={(e) => onSortChange(e.target.value as BetSort)}
+              className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#F5B400] focus:border-transparent"
+            >
+              {betSortOptions.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* View Mode Toggle */}
@@ -1085,9 +1135,9 @@ function MyBetsSection({
       )}
 
       {/* Tiles View */}
-      {!loading && bets.length > 0 && viewMode === 'tiles' && (
+      {!loading && sortedBets.length > 0 && viewMode === 'tiles' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {bets.map((bet) => (
+          {sortedBets.map((bet) => (
             <div
               key={bet.bet_id}
               className="bg-zinc-900 rounded-lg border border-zinc-800 p-4 hover:border-zinc-700 transition-colors"
@@ -1136,7 +1186,7 @@ function MyBetsSection({
       )}
 
       {/* Table View */}
-      {!loading && bets.length > 0 && viewMode === 'table' && (
+      {!loading && sortedBets.length > 0 && viewMode === 'table' && (
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -1152,7 +1202,7 @@ function MyBetsSection({
                 </tr>
               </thead>
               <tbody>
-                {bets.map((bet) => (
+                {sortedBets.map((bet) => (
                   <tr key={bet.bet_id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
                     <td className="px-4 py-3 text-zinc-500 text-sm">#{bet.bet_id}</td>
                     <td className="px-4 py-3 text-white font-medium">{bet.outcome}</td>
@@ -1176,9 +1226,9 @@ function MyBetsSection({
       )}
 
       {/* Bet Count */}
-      {!loading && bets.length > 0 && (
+      {!loading && sortedBets.length > 0 && (
         <p className="text-zinc-500 text-sm text-right">
-          Showing {bets.length} bet{bets.length !== 1 ? 's' : ''}
+          Showing {sortedBets.length} bet{sortedBets.length !== 1 ? 's' : ''}
         </p>
       )}
     </div>
@@ -1622,6 +1672,7 @@ export default function SportsBook() {
   const [isPlacingBet, setIsPlacingBet] = useState(false);
   const [userBets, setUserBets] = useState<Bet[]>([]);
   const [betsFilter, setBetsFilter] = useState<BetFilter>('all');
+  const [betsSort, setBetsSort] = useState<BetSort>('date-desc');
   const [betsViewMode, setBetsViewMode] = useState<BetViewMode>('tiles');
   const [loadingBets, setLoadingBets] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
@@ -1984,6 +2035,8 @@ export default function SportsBook() {
               loading={loadingBets}
               filter={betsFilter}
               onFilterChange={setBetsFilter}
+              sort={betsSort}
+              onSortChange={setBetsSort}
               viewMode={betsViewMode}
               onViewModeChange={setBetsViewMode}
               isConnected={connected}
