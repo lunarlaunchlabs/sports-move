@@ -1,11 +1,15 @@
 name: Update Scores Job
 
 on:
-  # schedule:
-    # Run every 1 hour
-    # - cron: '0 * * * *'
+  schedule:
+    # Run every minute
+    - cron: '* * * * *'
   workflow_dispatch:
     # Allow manual trigger from GitHub UI
+
+concurrency:
+  group: sports-move-blockchain-jobs
+  cancel-in-progress: false
 
 env:
   PRODUCTION_URL: https://sports-move.vercel.app
