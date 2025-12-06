@@ -45,19 +45,11 @@ export async function GET(request: Request) {
     // - If market doesn't exist: creates new
     for (const market of markets) {
       try {
-        // Only sync markets that haven't started yet
-        const commenceTime = new Date(market.commence_time).getTime();
-        const now = Date.now();
-        
-        if (commenceTime > now) {
-          // Call createMarket - contract handles create vs update internally
-          const txHash = await SportsBettingContract.createMarket(market);
-          console.log(`✅ Market synced: ${market.id} - TX: ${txHash}`);
-          syncResults.synced++;
-        } else {
-          console.log(`⏭️  Market already started, skipping: ${market.id}`);
-          syncResults.skipped++;
-        }
+        // Call createMarket - contract handles create vs update internally
+        // Contract will skip resolved/cancelled markets automatically
+        const txHash = await SportsBettingContract.createMarket(market);
+        console.log(`✅ Market synced: ${market.id} - TX: ${txHash}`);
+        syncResults.synced++;
       } catch (error: any) {
         console.error(`❌ Failed to sync market ${market.id}:`, error.message);
         syncResults.failed++;
