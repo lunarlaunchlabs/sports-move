@@ -24,6 +24,7 @@ interface Market {
   game_id: string;
   is_resolved: boolean;
   is_cancelled: boolean;
+  winning_outcome: string;
 }
 
 export async function GET(request: Request) {
@@ -123,11 +124,20 @@ export async function GET(request: Request) {
         break;
     }
     
+    // Enrich bets with winning_outcome for resolved markets
+    const enrichedBets = filteredBets.map(bet => {
+      const market = marketMap.get(bet.game_id);
+      return {
+        ...bet,
+        winning_outcome: market?.is_resolved ? market.winning_outcome : null
+      };
+    });
+    
     return NextResponse.json({
       address,
-      bets: filteredBets,
+      bets: enrichedBets,
       filter: filter.toLowerCase(),
-      count: filteredBets.length,
+      count: enrichedBets.length,
       total: bets.length
     });
   } catch (error: any) {

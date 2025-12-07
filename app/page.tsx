@@ -60,6 +60,7 @@ interface Bet {
   is_settled: boolean;
   is_cancelled: boolean;
   timestamp: string;
+  winning_outcome?: string | null;
 }
 
 type BetFilter = 'all' | 'active' | 'resolved' | 'cancelled';
@@ -1208,9 +1209,11 @@ function MyBetsSection({
       );
     }
     if (bet.is_settled) {
+      // Check if bet was successful (user's outcome matches winning outcome)
+      const isSuccessful = bet.winning_outcome && bet.outcome === bet.winning_outcome;
       return (
-        <span className="text-xs font-bold text-white">
-          Settled
+        <span className="text-xs font-bold text-zinc-400">
+          {isSuccessful ? 'Paid Out' : 'Settled'}
         </span>
       );
     }
