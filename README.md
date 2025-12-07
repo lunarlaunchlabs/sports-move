@@ -1,445 +1,791 @@
-# Sports Move - Movement Network Integration
+<p align="center">
+  <img src="public/SPORTS_MOVE_LOGO.png" alt="Sports Move Logo" width="400" />
+</p>
 
-A Next.js application integrated with Movement Network blockchain for on-chain data storage and retrieval.
+<p align="center">
+  <strong>Decentralized Sports Betting on Movement Network</strong>
+</p>
 
-## 🎯 Project Overview
+<p align="center">
+  <a href="https://sports-move.vercel.app/">Live App</a> •
+  <a href="#features">Features</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#getting-started">Getting Started</a> •
+  <a href="#smart-contracts">Smart Contracts</a>
+</p>
 
-This project demonstrates a full-stack blockchain integration connecting a Next.js backend with Movement Network (an Aptos-compatible L2) smart contracts. It includes a complete Move smart contract, backend services, and API endpoints for reading/writing blockchain data.
+<p align="center">
+  <img src="https://img.shields.io/badge/Movement-Network-gold" alt="Movement Network" />
+  <img src="https://img.shields.io/badge/Next.js-16-black" alt="Next.js 16" />
+  <img src="https://img.shields.io/badge/Move-Language-blue" alt="Move Language" />
+  <img src="https://img.shields.io/badge/React-19-61dafb" alt="React 19" />
+  <img src="https://img.shields.io/badge/Tailwind-v4-38bdf8" alt="Tailwind v4" />
+</p>
 
-## 🏗️ Architecture
+---
+
+## Introduction
+
+**Sports Move** is a fully decentralized sports betting platform built on the [Movement Network](https://movementnetwork.xyz/) blockchain. It enables users to place bets on major American sports leagues using smart contracts written in the Move programming language.
+
+### Why Sports Move?
+
+- **Decentralized** — All bets, payouts, and market resolutions happen on-chain
+- **Transparent** — Open-source contracts with verifiable odds and outcomes
+- **Fast** — Sub-second finality on Movement Network
+- **Fair** — House-backed system with automatic settlements and refunds
+
+### Supported Sports
+
+| League | Sport Key |
+|--------|-----------|
+| 🏈 NFL | `americanfootball_nfl` |
+| 🏀 NBA | `basketball_nba` |
+| 🏒 NHL | `icehockey_nhl` |
+| ⚾ MLB | `baseball_mlb` |
+
+---
+
+## Features
+
+### Core Betting Features
+
+- **American Odds Format** — Familiar +/- odds display (e.g., +150, -200)
+- **Real-Time Odds** — Live odds from FanDuel via [The Odds API](https://the-odds-api.com/)
+- **Head-to-Head Markets** — Moneyline bets on game winners
+- **Automatic Settlement** — Bets are settled automatically when games complete
+- **Full Refunds** — Cancelled/tied games trigger automatic refunds
+
+### Blockchain Features
+
+- **smUSD Stablecoin** — Custom betting token with 8 decimal precision
+- **Testnet Faucet** — Get up to 1,000 smUSD per request for testing
+- **House-Backed Payouts** — Escrow system ensures winnings are always covered
+- **5% House Fee** — Applied only to profits, not the original stake
+- **Multi-Admin Oracle** — 4 admin wallets for redundancy and security
+
+### User Experience
+
+- **Nightly Wallet Integration** — Seamless wallet connection
+- **Live Countdown Timers** — See when games start
+- **Bet Confirmation Confetti** — Celebratory animations on successful bets
+- **User Statistics Dashboard** — Track your betting performance with charts
+- **Responsive Design** — Works on desktop and mobile
+
+---
+
+## Architecture
+
+Sports Move follows a three-tier architecture:
 
 ```
-Frontend (Next.js)
-       ↓
-API Routes (/api/mock-move-contract)
-       ↓
-MockMoveContract Service
-       ↓
-Aptos SDK Client
-       ↓
-Movement Testnet
-       ↓
-Smart Contract (hello_world module)
+┌─────────────────────────────────────────────────────────────────┐
+│                         FRONTEND                                 │
+│  Next.js 16 • React 19 • Tailwind CSS v4 • Recharts             │
+│  - Wallet connection (Nightly)                                   │
+│  - Market browsing & filtering                                   │
+│  - Bet placement modal                                           │
+│  - User bet history & stats                                      │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        API LAYER                                 │
+│  Next.js API Routes                                              │
+│  - /api/get-markets     → Fetch markets from blockchain         │
+│  - /api/get-user-bets   → Fetch user bet history                │
+│  - /api/mint-smusd      → Testnet faucet                        │
+│  - /api/markets         → Sync odds from The Odds API           │
+│  - /api/scores          → Resolve markets & settle bets         │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     SMART CONTRACTS                              │
+│  Movement Network (Aptos-compatible)                             │
+│  - smusd.move          → Stablecoin token                       │
+│  - sports_betting.move → Betting logic, markets, settlements    │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## 📦 What's Included
+### Data Flow
 
-### 1. Smart Contract (`mock-move/`)
-- **Language:** Move
-- **Network:** Movement Testnet
-- **Address:** `0x99b815740349fe620dfcc577e7cd0c6106f031e2c8cf1de5579de9a5b25b0a4c`
-- **Module:** `hello_world`
-- **Status:** ✅ Deployed and Tested
+1. **Market Sync** — GitHub Actions cron job fetches odds from The Odds API and syncs to blockchain
+2. **User Bets** — Users connect wallet, select outcomes, and sign transactions
+3. **Score Updates** — Cron job fetches completed game scores
+4. **Settlement** — Contract automatically resolves markets and pays out winners
 
-**Features:**
-- On-chain data storage (message, value, active status)
-- View functions for frontend data retrieval
-- Entry functions for backend data updates
-- Event emission on data changes
-- Comprehensive unit tests (5/5 passing)
+---
 
-### 2. Backend Service (`app/services/MockMoveContract.ts`)
-TypeScript service providing:
-- `getData(address)` - Read all data from contract
-- `setData(privateKey, message, value)` - Write data to contract
-- `getField(address, field)` - Read specific fields
-- `hasDataStore(address)` - Check initialization status
-- `getContractAddress()` - Get contract address
+## Smart Contracts
 
-### 3. API Endpoints (`app/api/mock-move-contract/`)
+### Contract Address
 
-#### GET `/api/mock-move-contract`
-Read data from the blockchain.
-
-**Parameters:**
-- `address` (required) - Account address
-- `field` (optional) - Specific field: `message`, `value`, or `isActive`
-
-**Example:**
-```bash
-curl "http://localhost:3000/api/mock-move-contract?address=0x99b815..."
 ```
+0xc90dabb5730415a099ff16d8edf5a3a350ff28d3183e2ecb80182312cc99d5cb
+```
+
+### smUSD Stablecoin (`smusd.move`)
+
+A fungible token implementation for betting transactions.
+
+| Function | Description |
+|----------|-------------|
+| `initialize()` | Deploy the stablecoin (called once) |
+| `register(account)` | Register account to receive smUSD |
+| `mint(to, amount)` | Mint smUSD to any address |
+| `transfer(from, to, amount)` | Transfer tokens between accounts |
+| `burn(account, amount)` | Burn tokens from account |
+| `balance_of(addr)` | View balance (returns u64) |
+| `total_supply()` | View total supply (returns u128) |
+
+**Token Details:**
+- Name: Sports Move USD
+- Symbol: smUSD
+- Decimals: 8
+
+### Sports Betting Contract (`sports_betting.move`)
+
+The core betting logic with markets, bets, and settlements.
+
+#### Data Structures
+
+```move
+struct Market {
+    game_id: String,
+    sport_key: String,
+    sport_title: String,
+    home_team: String,
+    away_team: String,
+    commence_time: u64,
+    home_odds: u64,
+    home_odds_positive: bool,
+    away_odds: u64,
+    away_odds_positive: bool,
+    odds_last_update: u64,
+    is_resolved: bool,
+    is_cancelled: bool,
+    winning_outcome: String,
+}
+
+struct Bet {
+    bet_id: u64,
+    user: address,
+    game_id: String,
+    outcome: String,
+    amount: u64,
+    odds: u64,
+    odds_positive: bool,
+    potential_payout: u64,
+    is_settled: bool,
+    timestamp: u64,
+}
+```
+
+#### Admin Functions
+
+| Function | Description |
+|----------|-------------|
+| `initialize(admin1, admin2, admin3, admin4)` | Initialize with 4 admin addresses |
+| `create_market(...)` | Create new betting market |
+| `update_market_odds(...)` | Update odds for existing market |
+| `resolve_market(game_id, winning_team)` | Declare winner |
+| `cancel_market(game_id)` | Cancel and refund all bets |
+| `settle_bets(game_id)` | Pay out winning bets |
+| `deposit_house_funds(amount)` | Add funds to house balance |
+| `add_admin(new_admin)` | Add new admin (owner only) |
+| `remove_admin(admin)` | Remove admin (owner only) |
+
+#### User Functions
+
+| Function | Description |
+|----------|-------------|
+| `place_bet(game_id, outcome, amount)` | Place a bet on a market |
+
+#### View Functions
+
+| Function | Description |
+|----------|-------------|
+| `get_markets()` | Get all markets |
+| `get_market(game_id)` | Get specific market |
+| `get_user_bets(user)` | Get all bets for a user |
+| `get_bet(bet_id)` | Get specific bet |
+| `get_house_balance()` | Get house balance |
+| `get_admins()` | Get admin addresses |
+| `calculate_payout_view(amount, odds, is_positive)` | Calculate potential payout |
+
+#### Odds Calculation
+
+**Positive Odds (Underdog):**
+```
+payout = stake + (stake × odds / 100)
+Example: $100 at +320 = $420 payout ($320 profit)
+```
+
+**Negative Odds (Favorite):**
+```
+payout = stake + (stake × 100 / odds)
+Example: $100 at -400 = $125 payout ($25 profit)
+```
+
+**House Fee:** 5% of profit (not stake)
+
+#### Error Codes
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 1 | `ENOT_ADMIN` | Caller is not an authorized admin |
+| 2 | `EMARKET_NOT_FOUND` | Market doesn't exist |
+| 3 | `EMARKET_RESOLVED` | Cannot bet on resolved market |
+| 4 | `EMARKET_CANCELLED` | Market is cancelled |
+| 5 | `EINSUFFICIENT_BALANCE` | User lacks smUSD for bet |
+| 6 | `EINSUFFICIENT_HOUSE_FUNDS` | House cannot cover payouts |
+| 7 | `EALREADY_SETTLED` | Bet already paid out |
+| 8 | `EINVALID_ODDS` | Odds format incorrect |
+| 9 | `EBET_NOT_FOUND` | Bet ID doesn't exist |
+| 10 | `EALREADY_INITIALIZED` | Contract already initialized |
+| 11 | `ENOT_OWNER` | Caller is not contract owner |
+| 12 | `EMARKET_NOT_RESOLVED` | Market not yet resolved |
+| 13 | `EADMIN_LIMIT_REACHED` | Maximum 10 admins |
+| 14 | `EADMIN_NOT_FOUND` | Admin address not found |
+
+#### Events
+
+- `MarketCreatedEvent` — New betting market added
+- `BetPlacedEvent` — User placed a bet
+- `MarketResolvedEvent` — Outcome determined
+- `MarketCancelledEvent` — Game cancelled
+- `BetSettledEvent` — Bet settled (win/loss)
+- `BetRefundedEvent` — Bet refunded
+
+---
+
+## API Routes
+
+### GET `/api/get-markets`
+
+Fetch markets from the blockchain with optional filtering.
+
+**Query Parameters:**
+| Parameter | Required | Values | Description |
+|-----------|----------|--------|-------------|
+| `competition` | Yes | `all`, `nfl`, `nba`, `nhl`, `mlb` | Filter by sport |
+| `filter` | No | `all`, `active`, `resolved`, `cancelled` | Filter by status |
 
 **Response:**
 ```json
 {
-  "address": "0x99b815...",
-  "data": {
-    "message": "Hello, Blockchain!",
-    "value": 42,
-    "isActive": true
-  },
-  "initialized": true
+  "markets": [...],
+  "filter": "active",
+  "competition": "nfl",
+  "count": 12,
+  "total": 45
 }
 ```
 
-#### POST `/api/mock-move-contract`
-Write data to the blockchain.
+### GET `/api/get-user-bets`
 
-**Body:**
+Fetch a user's bet history.
+
+**Query Parameters:**
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `address` | Yes | User wallet address (0x...) |
+| `filter` | No | `all`, `active`, `resolved`, `cancelled` |
+
+**Response:**
 ```json
 {
-  "privateKey": "0x...",
-  "message": "Your message",
-  "value": 100
+  "address": "0x...",
+  "bets": [...],
+  "filter": "all",
+  "count": 5,
+  "total": 5
 }
 ```
+
+### POST `/api/mint-smusd`
+
+Testnet faucet to mint smUSD tokens.
+
+**Request Body:**
+```json
+{
+  "address": "0x...",
+  "amount": 100
+}
+```
+
+**Limits:** Maximum 1,000 smUSD per request
 
 **Response:**
 ```json
 {
   "success": true,
-  "transactionHash": "0xabc123...",
-  "address": "0x99b815...",
-  "data": {
-    "message": "Your message",
-    "value": 100,
-    "isActive": true
-  },
-  "explorerUrl": "https://explorer.movementnetwork.xyz/txn/0xabc123..."
+  "txHash": "0x...",
+  "message": "Successfully minted 100 smUSD to 0x..."
 }
 ```
 
-## 🚀 Quick Start
+### GET `/api/markets`
+
+Sync markets from The Odds API to the blockchain.
+
+**Query Parameters:**
+| Parameter | Required | Values |
+|-----------|----------|--------|
+| `sport` | Yes | `americanfootball_nfl`, `basketball_nba`, `icehockey_nhl`, `baseball_mlb` |
+
+**Response:**
+```json
+{
+  "markets": [...],
+  "blockchain": {
+    "total": 10,
+    "synced": 8,
+    "skipped": 2,
+    "failed": 0
+  }
+}
+```
+
+### GET `/api/scores`
+
+Fetch scores and resolve/settle completed games.
+
+**Query Parameters:**
+| Parameter | Required | Values |
+|-----------|----------|--------|
+| `sport` | Yes | `americanfootball_nfl`, `basketball_nba`, `icehockey_nhl`, `baseball_mlb` |
+
+**Response:**
+```json
+{
+  "scores": [...],
+  "blockchain": {
+    "total": 5,
+    "resolved": 2,
+    "settled": 2,
+    "skipped": 3,
+    "failed": 0
+  }
+}
+```
+
+---
+
+## Project Structure
+
+```
+sports-move/
+├── app/
+│   ├── api/
+│   │   ├── get-markets/          # Blockchain market queries
+│   │   ├── get-user-bets/        # User bet history
+│   │   ├── markets/              # The Odds API sync
+│   │   ├── mint-smusd/           # Testnet faucet
+│   │   └── scores/               # Score resolution
+│   ├── providers/
+│   │   └── WalletProvider.tsx    # Aptos wallet adapter
+│   ├── services/
+│   │   ├── SportsBettingContract.ts  # Contract SDK
+│   │   └── TheOddsApi.ts         # Odds API client
+│   ├── types/
+│   │   ├── index.ts
+│   │   └── the-odds-api.ts       # API type definitions
+│   ├── globals.css               # Tailwind styles
+│   ├── layout.tsx                # Root layout
+│   └── page.tsx                  # Main app (2690 lines)
+├── move/
+│   ├── sources/
+│   │   ├── smusd.move            # Stablecoin contract
+│   │   ├── sports_betting.move   # Betting contract
+│   │   └── tests/                # Move tests
+│   ├── Move.toml                 # Move package config
+│   ├── README.md                 # Contract documentation
+│   ├── DEPLOYMENT.md             # Deployment guide
+│   └── API_INTEGRATION.md        # API integration guide
+├── scripts/
+│   ├── fresh-deploy.js           # Full deployment automation
+│   ├── sports-move-job.js        # Cron job script
+│   ├── fund-wallet.js            # Fund wallet from faucet
+│   ├── fund-vault.js             # Fund house vault
+│   ├── check-vault.js            # Check vault balance
+│   ├── check-balances.js         # Check account balances
+│   ├── check-bets.js             # Inspect bets
+│   ├── check-markets.js          # Inspect markets
+│   └── view-wallets.js           # View wallet info
+├── .github/
+│   └── workflows/
+│       ├── rotate-markets-job.yml    # Market sync cron
+│       ├── update-scores-job.yml     # Score update cron
+│       └── fund-admin-wallet.yml     # Admin funding cron
+├── public/
+│   ├── SPORTS_MOVE_LOGO.png
+│   └── SPORTS_MOVE_ENTRY_LOGO.png
+├── package.json
+└── FRESH_DEPLOYMENT.json         # Deployment config
+```
+
+---
+
+## Getting Started
 
 ### Prerequisites
-- Node.js 18+ and npm
-- Movement CLI (optional, for contract development)
+
+- **Node.js** 20+
+- **npm** or **yarn**
+- **Movement CLI** (for contract deployment)
+- **Nightly Wallet** browser extension
 
 ### Installation
 
 ```bash
-# Clone and install dependencies
+# Clone the repository
+git clone https://github.com/your-username/sports-move.git
+cd sports-move
+
+# Install dependencies
 npm install
 
 # Start development server
 npm run dev
 ```
 
-### Test the Integration
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-```bash
-# Run automated integration tests
-npm run test:contract-api
+### Environment Variables
+
+Create a `.env.local` file:
+
+```env
+# Not required for frontend-only development
+# Contract interactions use hardcoded testnet addresses
 ```
 
-**Expected Output:**
-```
-🧪 Movement Network Contract API Test Suite
-✅ POST request successful!
-✅ GET request successful!
-🎉 All tests passed!
-```
+### NPM Scripts
 
-## 📜 Available NPM Scripts
-
-### Development
-```bash
-npm run dev          # Start Next.js development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
-```
-
-### Smart Contract Management
-```bash
-npm run contract:compile    # Compile Move contracts
-npm run contract:test       # Run Move contract tests
-npm run contract:deploy     # Deploy contracts to Movement Network
-npm run contract:init       # Initialize deployed contracts
-```
-
-### Wallet Management
-```bash
-npm run wallet:generate     # Generate 4 oracle admin wallets
-npm run wallet:fund         # Fund all admin wallets from faucet
-npm run wallet:register     # Register remaining admins for smUSD
-npm run wallet:pubkey       # Get public key from private key (pass key as arg)
-```
-
-### Testing
-```bash
-npm run test:contracts         # Run sports betting integration tests (mock)
-npm run test:contract-api      # Run Movement API integration tests
-npm run test:api-integration   # Run complete end-to-end API workflow test
-```
-
-### Full Setup (Sports Betting)
-```bash
-npm run setup:full          # Complete setup: generate wallets → fund → compile → deploy → initialize
-npm run setup:init-only     # Initialize contracts and register admins (after manual deployment)
-```
-
-### Usage Examples
-
-**Generate new wallets:**
-```bash
-npm run wallet:generate
-# Creates 4 admin wallets and stores in .env
-```
-
-**Deploy sports betting contracts:**
-```bash
-npm run contract:compile    # First compile
-npm run contract:deploy     # Then deploy
-npm run contract:init       # Finally initialize
-```
-
-**Get public key from private key:**
-```bash
-npm run wallet:pubkey 0xYOUR_PRIVATE_KEY_HERE
-# Outputs: ed25519-pub-0x...
-```
-
-**Run full integration test:**
-```bash
-npm run test:contracts
-# Tests complete betting flow with mocked blockchain
-```
-
-**Run complete API integration test:**
-```bash
-npm run dev  # Start dev server first
-npm run test:api-integration
-# Tests complete end-to-end workflow:
-# 1. Syncs markets to blockchain
-# 2. Places test bets
-# 3. Resolves markets and settles bets
-# 4. Queries all endpoints with all filter combinations
-# 5. Generates 17+ JSON files in test-results/ for verification
-```
-
-## 📊 Contract Information
-
-### Deployment Details
-- **Contract Address:** `0x99b815740349fe620dfcc577e7cd0c6106f031e2c8cf1de5579de9a5b25b0a4c`
-- **Module Name:** `hello_world`
-- **Network:** Movement Testnet
-- **RPC Endpoint:** `https://testnet.movementnetwork.xyz/v1`
-- **Faucet:** `https://faucet.testnet.movementnetwork.xyz/`
-- **Explorer:** `https://explorer.movementnetwork.xyz/?network=bardock+testnet`
-
-### Deployed Transaction
-- **Tx Hash:** `0x671c8adf143bae90b42feb32126b99c3bc92d989c2fb396300c08c27bd217f94`
-- **Gas Used:** 3,412 Octas
-- **Status:** ✅ Executed successfully
-- [View on Explorer](https://explorer.movementnetwork.xyz/txn/0x671c8adf143bae90b42feb32126b99c3bc92d989c2fb396300c08c27bd217f94?network=custom)
-
-### Data Structure
-
-```move
-struct DataStore has key {
-    message: String,           // Text data
-    value: u64,                // Numeric data  
-    is_active: bool,           // Status flag
-    data_change_events: EventHandle<DataChangeEvent>
-}
-```
-
-## 🔧 Development
-
-### Working with the Smart Contract
-
-```bash
-# Navigate to contract directory
-cd mock-move
-
-# Compile contract
-movement move compile
-
-# Run tests
-movement move test
-
-# Publish contract (requires funded account)
-movement move publish --included-artifacts none --assume-yes
-```
-
-### Environment Setup
-
-For production, create `.env.local`:
-```bash
-MOVEMENT_PRIVATE_KEY=0xYOUR_PRIVATE_KEY
-```
-
-⚠️ **Never commit private keys to version control!**
-
-## 📚 Documentation
-
-- **[QUICKSTART.md](./QUICKSTART.md)** - 3-step quick start guide
-- **[MOVEMENT_INTEGRATION.md](./MOVEMENT_INTEGRATION.md)** - Complete integration guide
-- **[Contract README](./mock-move/README.md)** - Smart contract documentation
-- **[API README](./app/api/mock-move-contract/README.md)** - API usage guide
-
-## 🧪 Testing
-
-### Automated Tests
-The project includes a comprehensive test suite:
-
-```bash
-node test-contract-api.js
-```
-
-Tests verify:
-- ✅ POST endpoint writes data to blockchain
-- ✅ GET endpoint reads all data
-- ✅ GET endpoint reads specific fields
-- ✅ Transaction confirmation
-- ✅ Data persistence
-
-### Manual Testing
-
-**1. Write data:**
-```bash
-curl -X POST http://localhost:3000/api/mock-move-contract \
-  -H "Content-Type: application/json" \
-  -d '{
-    "privateKey": "0xYOUR_PRIVATE_KEY",
-    "message": "Test Message",
-    "value": 42
-  }'
-```
-
-**2. Read data:**
-```bash
-curl "http://localhost:3000/api/mock-move-contract?address=0x99b815..."
-```
-
-**3. Read specific field:**
-```bash
-curl "http://localhost:3000/api/mock-move-contract?address=0x99b815...&field=message"
-```
-
-## 🔐 Security
-
-### Best Practices
-- ✅ Private keys stored in environment variables
-- ✅ `.movement/config.yaml` gitignored
-- ✅ Server-side signing only
-- ✅ Input validation on all endpoints
-- ✅ Error handling and logging
-
-### Production Checklist
-- [ ] Set up proper authentication
-- [ ] Implement rate limiting
-- [ ] Use environment variables for secrets
-- [ ] Enable transaction monitoring
-- [ ] Set up error tracking (e.g., Sentry)
-
-## 📁 Project Structure
-
-```
-sports-move/
-├── app/
-│   ├── api/
-│   │   ├── markets/              # Sports markets API
-│   │   └── mock-move-contract/   # Blockchain API
-│   │       ├── route.ts          # GET/POST endpoints
-│   │       └── README.md         # API documentation
-│   ├── services/
-│   │   ├── MockMoveContract.ts   # Blockchain service
-│   │   └── TheOddsApi.ts         # Sports odds service
-│   ├── layout.tsx
-│   └── page.tsx
-├── mock-move/                     # Move smart contract
-│   ├── sources/
-│   │   └── hello_world.move      # Contract code
-│   ├── Move.toml                 # Contract config
-│   ├── README.md                 # Contract docs
-│   └── .movement/                # CLI config (gitignored)
-├── test-contract-api.js          # Integration tests
-├── QUICKSTART.md                 # Quick start guide
-├── MOVEMENT_INTEGRATION.md       # Integration guide
-├── package.json
-└── README.md                     # This file
-```
-
-## 🔗 Resources
-
-### Movement Network
-- [Movement Docs](https://docs.movementnetwork.xyz/)
-- [Movement CLI Guide](https://docs.movementnetwork.xyz/devs/movementcli)
-- [First Move Contract Tutorial](https://docs.movementnetwork.xyz/devs/firstMoveContract)
-- [Testnet Explorer](https://explorer.movementnetwork.xyz/?network=bardock+testnet)
-- [Testnet Faucet](https://faucet.testnet.movementnetwork.xyz/)
-
-### Move Language
-- [Move Book](https://move-language.github.io/move/)
-- [Aptos Move Guide](https://aptos.dev/move/move-on-aptos/)
-
-## 🎯 Use Cases
-
-### Sports Betting (Example)
-```typescript
-// Store game results on-chain
-await fetch('/api/mock-move-contract', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    privateKey: process.env.MOVEMENT_PRIVATE_KEY,
-    message: JSON.stringify({ 
-      game: 'Lakers vs Celtics', 
-      score: '120-115',
-      winner: 'Lakers' 
-    }),
-    value: 120115  // Combined score
-  })
-});
-
-// Read game results
-const response = await fetch(
-  `/api/mock-move-contract?address=${contractAddress}`
-);
-const { data } = await response.json();
-console.log('Game Data:', JSON.parse(data.message));
-```
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**"Module not found"**
-- Solution: Contract not deployed. Run `cd mock-move && movement move publish --assume-yes`
-
-**"Account not found"**
-- Solution: Fund account at [faucet](https://faucet.testnet.movementnetwork.xyz/)
-
-**"Data store not initialized"**
-- Solution: Write data first (POST) before reading (GET)
-
-**Test script fails**
-- Ensure dev server is running: `npm run dev`
-- Check account has testnet tokens
-- Verify `.movement/config.yaml` exists
-
-## 📈 Performance
-
-- **Contract Deployment:** ~3,400 gas units
-- **Data Write (Initialize):** ~1,000-2,000 gas units
-- **Data Write (Update):** ~800-1,500 gas units
-- **Data Read:** Free (view functions)
-- **Transaction Time:** 3-5 seconds average
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests: `node test-contract-api.js`
-5. Submit a pull request
-
-## 📄 License
-
-MIT
-
-## 🎉 Success Metrics
-
-- ✅ Smart contract compiled and deployed
-- ✅ All unit tests passing (5/5)
-- ✅ Integration tests passing (100%)
-- ✅ API endpoints functional
-- ✅ Documentation complete
-- ✅ Production-ready architecture
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
+| `npm run contract:compile` | Compile Move contracts |
+| `npm run contract:test` | Run Move tests |
+| `npm run contract:deploy` | Deploy contracts |
+| `npm run test:contracts` | Run integration tests |
 
 ---
 
-**Built with** [Next.js](https://nextjs.org/) • [Movement Network](https://movementnetwork.xyz/) • [Move Language](https://move-language.github.io/move/)
+## Deployment
+
+### Fresh Contract Deployment
+
+The `fresh-deploy.js` script automates complete deployment:
+
+```bash
+node scripts/fresh-deploy.js
+```
+
+**What it does:**
+1. Generates new deployer account
+2. Funds deployer from faucet
+3. Generates 4 admin wallets
+4. Funds admin wallets
+5. Updates `Move.toml` with new address
+6. Compiles and deploys contracts
+7. Initializes smUSD
+8. Initializes Sports Betting with admins
+9. Registers all accounts for smUSD
+10. Mints 15,000,000 smUSD
+11. Deposits 10,000,000 smUSD to house vault
+12. Saves config to `FRESH_DEPLOYMENT.json`
+
+### Update Contract Addresses
+
+After deployment, update these files with the new contract address:
+
+- `app/page.tsx` (line 18)
+- `app/services/SportsBettingContract.ts` (line 6)
+- `app/api/get-user-bets/route.ts` (line 6)
+
+### Vercel Deployment
+
+The frontend is deployed automatically via Vercel:
+
+1. Push to `main` branch
+2. Vercel builds and deploys
+3. Live at https://sports-move.vercel.app/
+
+---
+
+## GitHub Actions Automation
+
+Three automated workflows keep the platform running:
+
+### Rotate Markets Job
+
+**File:** `.github/workflows/rotate-markets-job.yml`
+
+**Schedule:** Every minute (`* * * * *`)
+
+**Purpose:** Syncs live odds from The Odds API to the blockchain
+
+```bash
+# Manual trigger
+node scripts/sports-move-job.js --job=markets
+```
+
+- Fetches odds for NFL, NBA, NHL, MLB
+- Creates new markets or updates existing odds
+- Skips resolved/cancelled markets
+
+### Update Scores Job
+
+**File:** `.github/workflows/update-scores-job.yml`
+
+**Schedule:** Every minute (`* * * * *`)
+
+**Purpose:** Resolves completed games and settles bets
+
+```bash
+# Manual trigger
+node scripts/sports-move-job.js --job=scores
+```
+
+- Fetches completed game scores
+- Determines winners
+- Resolves markets on-chain
+- Settles all bets (pays winners, updates house balance)
+
+### Fund Admin Wallet Job
+
+**File:** `.github/workflows/fund-admin-wallet.yml`
+
+**Schedule:** Every hour (`0 * * * *`)
+
+**Purpose:** Keeps admin wallet funded with MOVE for gas fees
+
+```bash
+# Manual trigger
+node scripts/fund-wallet.js 0x5b27d6852a89b3099c15e728712bb2e20d2103664f8f462e4f1388ff255df150
+```
+
+### Common Features
+
+All workflows support:
+- Manual trigger via `workflow_dispatch`
+- GitHub Actions job summaries
+- 10-15 minute timeouts
+- Concurrency groups (markets/scores)
+
+---
+
+## Configuration
+
+### Network Configuration
+
+| Setting | Value |
+|---------|-------|
+| Network | Movement Testnet |
+| Chain ID | 250 |
+| RPC URL | `https://testnet.movementnetwork.xyz/v1` |
+| Faucet URL | `https://faucet.testnet.movementnetwork.xyz` |
+| Explorer | `https://explorer.movementnetwork.xyz/?network=bardock+testnet` |
+
+### Contract Configuration
+
+| Setting | Value |
+|---------|-------|
+| Contract Address | `0xc90dabb5730415a099ff16d8edf5a3a350ff28d3183e2ecb80182312cc99d5cb` |
+| smUSD Module | `{contract}::smusd` |
+| Betting Module | `{contract}::sports_betting` |
+
+### Design System
+
+| Element | Value |
+|---------|-------|
+| Primary Color | `#F5B400` (Gold) |
+| Background | `#000000` (Black) |
+| Text | `#FFFFFF` (White) |
+| Font | Geist Sans / Geist Mono |
+
+---
+
+## Tech Stack
+
+### Frontend
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| Next.js | 16.0.7 | React framework |
+| React | 19.2.1 | UI library |
+| Tailwind CSS | 4.x | Styling |
+| Recharts | 3.5.1 | Charts & graphs |
+| react-confetti | 6.4.0 | Celebration effects |
+| react-icons | 5.5.0 | Icon library |
+| sonner | 2.0.7 | Toast notifications |
+
+### Blockchain
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| aptos | 1.22.1 | Aptos SDK |
+| @aptos-labs/wallet-adapter-core | 7.8.0 | Wallet core |
+| @aptos-labs/wallet-adapter-react | 7.2.2 | React wallet hooks |
+| @nightlylabs/aptos-wallet-adapter-plugin | 0.2.12 | Nightly wallet |
+
+### Development
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| TypeScript | 5.x | Type safety |
+| ESLint | 9.x | Linting |
+| dotenv | 17.2.3 | Environment variables |
+
+---
+
+## Usage Guide
+
+### 1. Install Nightly Wallet
+
+Download from [nightly.app](https://nightly.app/) and install the browser extension.
+
+### 2. Connect to Testnet
+
+In Nightly wallet settings, switch to Movement Network testnet.
+
+### 3. Connect Wallet
+
+Click "Connect Wallet" on the Sports Move website.
+
+### 4. Get smUSD from Faucet
+
+1. Scroll to the "smUSD Faucet" section
+2. Enter amount (max 1,000 smUSD)
+3. Click "Mint smUSD"
+4. Wait for transaction confirmation
+
+### 5. Browse Markets
+
+- Use tabs to filter by status (Active, Resolved, Cancelled)
+- Use sport filters (All, NFL, NBA, NHL, MLB)
+- Sort by game time (Soonest/Latest)
+- Search by team name
+
+### 6. Place a Bet
+
+1. Find an active market
+2. Click on the team you want to bet on
+3. Enter bet amount
+4. Review odds and potential payout
+5. Click "Place Bet"
+6. Confirm transaction in wallet
+7. Celebrate with confetti! 🎉
+
+### 7. View Your Bets
+
+Scroll to "My Bets" section to see:
+- Active bets (pending resolution)
+- Resolved bets (won/lost)
+- Cancelled bets (refunded)
+- Stats dashboard with charts
+
+---
+
+## Security Considerations
+
+### Smart Contract Security
+
+- **Admin Authorization** — Only authorized admin addresses can create/resolve markets
+- **Bet Immutability** — Bets cannot be modified after placement
+- **Escrow System** — User funds held in contract until settlement
+- **Automated Refunds** — Cancelled games trigger automatic refunds
+- **House Solvency** — Contract tracks house balance for payout capability
+
+### Operational Security
+
+- **Multi-Admin System** — 4 admin wallets for redundancy
+- **Private Keys** — Never committed to repository
+- **Environment Variables** — Sensitive data in `.env` files
+- **Testnet Only** — Current deployment is for testing purposes
+
+### Best Practices
+
+- Never share private keys
+- Verify transaction details before signing
+- Start with small amounts when testing
+- Keep wallet software updated
+
+---
+
+## Scripts Reference
+
+### Deployment Scripts
+
+| Script | Description |
+|--------|-------------|
+| `fresh-deploy.js` | Complete fresh deployment with new wallets |
+| `fund-wallet.js` | Fund a wallet from the faucet |
+| `fund-vault.js` | Transfer smUSD to house vault |
+
+### Monitoring Scripts
+
+| Script | Description |
+|--------|-------------|
+| `check-vault.js` | Check resource account balance |
+| `check-balances.js` | Check all account balances |
+| `check-bets.js` | Inspect bets on chain |
+| `check-markets.js` | Inspect markets on chain |
+| `view-wallets.js` | View wallet information |
+
+### Automation Scripts
+
+| Script | Description |
+|--------|-------------|
+| `sports-move-job.js` | Cron job for markets/scores |
+| `get-public-key.js` | Derive public key from private key |
+
+---
+
+## Resources
+
+### Official Links
+
+- **Live App:** https://sports-move.vercel.app/
+- **Movement Network:** https://movementnetwork.xyz/
+- **Movement Docs:** https://docs.movementnetwork.xyz/
+- **Block Explorer:** https://explorer.movementnetwork.xyz/
+
+### Development Resources
+
+- **Move Language:** https://move-language.github.io/move/
+- **Aptos SDK:** https://aptos.dev/sdks/ts-sdk/
+- **The Odds API:** https://the-odds-api.com/
+- **Nightly Wallet:** https://nightly.app/
+
+### Contract Documentation
+
+- [`move/README.md`](move/README.md) — Contract overview
+- [`move/DEPLOYMENT.md`](move/DEPLOYMENT.md) — Deployment guide
+- [`move/API_INTEGRATION.md`](move/API_INTEGRATION.md) — API integration
+
+---
+
+## License
+
+MIT License
+
+---
+
+## Support
+
+For issues and questions, please create an issue in the repository.
+
+---
+
+<p align="center">
+  <strong>Built with ❤️ on Movement Network Testnet</strong>
+</p>
+
