@@ -948,24 +948,36 @@ function UserStats({ bets, isConnected }: UserStatsProps) {
   if (!isConnected || bets.length === 0) return null;
 
   const totalBets = bets.length;
-  const activeBets = bets.filter(b => !b.is_settled).length;
-  const settledBets = bets.filter(b => b.is_settled).length;
+  const activeBets = bets.filter(b => !b.is_settled && !b.is_cancelled).length;
   
-  // Calculate totals
+  // Calculate wins and losses from settled bets
+  const settledBetsList = bets.filter(b => b.is_settled && !b.is_cancelled);
+  const wonBets = settledBetsList.filter(b => b.winning_outcome && b.outcome === b.winning_outcome);
+  const lostBets = settledBetsList.filter(b => b.winning_outcome && b.outcome !== b.winning_outcome);
+  
+  // Calculate amounts
   const totalWagered = bets.reduce((sum, b) => sum + parseInt(b.amount), 0) / 100_000_000;
-  const totalPotentialPayout = bets.reduce((sum, b) => sum + parseInt(b.potential_payout), 0) / 100_000_000;
+  const totalWon = wonBets.reduce((sum, b) => sum + parseInt(b.potential_payout), 0) / 100_000_000;
+  const totalLost = lostBets.reduce((sum, b) => sum + parseInt(b.amount), 0) / 100_000_000;
+  const netProfit = totalWon - totalLost;
   
-  // Win/Loss data for pie chart (based on settled bets)
-  // For now, we'll use active vs settled as a proxy since we don't have win/loss tracking
-  const pieData = [
-    { name: 'Active', value: activeBets },
-    { name: 'Settled', value: settledBets },
-  ];
+  // Pie chart data - only show if there are settled bets with outcomes
+  const hasSettledData = wonBets.length > 0 || lostBets.length > 0;
+  const pieData = hasSettledData
+    ? [
+        { name: 'Paid Out', value: wonBets.length },
+        { name: 'Settled', value: lostBets.length },
+      ]
+    : [
+        { name: 'Active', value: activeBets },
+        { name: 'Pending', value: settledBetsList.length },
+      ];
 
   // Bar chart data
   const barData = [
     { name: 'Wagered', amount: totalWagered },
-    { name: 'Potential', amount: totalPotentialPayout },
+    { name: 'Returned', amount: totalWon },
+    { name: 'Settled', amount: totalLost },
   ];
 
   return (
@@ -975,30 +987,32 @@ function UserStats({ bets, isConnected }: UserStatsProps) {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
         <div className="bg-zinc-800/50 rounded-lg p-3">
-          <p className="text-zinc-400 text-xs">Total Bets</p>
-          <p className="text-xl font-bold text-white">{totalBets}</p>
-        </div>
-        <div className="bg-zinc-800/50 rounded-lg p-3">
-          <p className="text-zinc-400 text-xs">Active Bets</p>
-          <p className="text-xl font-bold text-blue-400">{activeBets}</p>
-        </div>
-        <div className="bg-zinc-800/50 rounded-lg p-3">
           <p className="text-zinc-400 text-xs">Total Wagered</p>
-          <p className="text-xl font-bold text-[#F5B400]">{totalWagered.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+          <p className="text-xl font-bold text-[#F5B400]">{totalWagered.toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-sm font-normal">smUSD</span></p>
         </div>
         <div className="bg-zinc-800/50 rounded-lg p-3">
-          <p className="text-zinc-400 text-xs">Potential ROI</p>
-          <p className="text-xl font-bold text-green-400">
-            {totalWagered > 0 ? ((totalPotentialPayout / totalWagered - 1) * 100).toFixed(1) : 0}%
+          <p className="text-zinc-400 text-xs">Total Returned</p>
+          <p className="text-xl font-bold text-green-400">{totalWon.toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-sm font-normal">smUSD</span></p>
+        </div>
+        <div className="bg-zinc-800/50 rounded-lg p-3">
+          <p className="text-zinc-400 text-xs">Total Settled</p>
+          <p className="text-xl font-bold text-zinc-400">{totalLost.toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-sm font-normal">smUSD</span></p>
+        </div>
+        <div className="bg-zinc-800/50 rounded-lg p-3">
+          <p className="text-zinc-400 text-xs">Net Position</p>
+          <p className={`text-xl font-bold ${netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {netProfit >= 0 ? '+' : ''}{netProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-sm font-normal">smUSD</span>
           </p>
         </div>
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Pie Chart - Bet Status */}
+        {/* Pie Chart - Bet Outcomes */}
         <div className="bg-zinc-800/30 rounded-lg p-3">
-          <h4 className="text-xs font-medium text-zinc-400 mb-2">Bet Status</h4>
+          <h4 className="text-xs font-medium text-zinc-400 mb-2">
+            {hasSettledData ? 'Bet Outcomes' : 'Bet Status'}
+          </h4>
           <div className="h-24">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -1014,8 +1028,8 @@ function UserStats({ bets, isConnected }: UserStatsProps) {
                   label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                   labelLine={false}
                 >
-                  <Cell fill="#3b82f6" />
                   <Cell fill="#22c55e" />
+                  <Cell fill="#71717a" />
                 </Pie>
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px' }}
@@ -1026,12 +1040,12 @@ function UserStats({ bets, isConnected }: UserStatsProps) {
           </div>
           <div className="flex justify-center gap-4 mt-1">
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-xs text-zinc-400">Active</span>
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <span className="text-xs text-zinc-400">{hasSettledData ? 'Paid Out' : 'Active'}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
-              <span className="text-xs text-zinc-400">Settled</span>
+              <div className="w-2 h-2 rounded-full bg-zinc-500" />
+              <span className="text-xs text-zinc-400">{hasSettledData ? 'Settled' : 'Pending'}</span>
             </div>
           </div>
         </div>
@@ -1039,7 +1053,7 @@ function UserStats({ bets, isConnected }: UserStatsProps) {
         {/* Bar Chart - Amounts */}
         <div className="bg-zinc-800/30 rounded-lg p-3">
           <h4 className="text-xs font-medium text-zinc-400 mb-2">Amount Overview</h4>
-          <div className="h-24">
+          <div className="h-28">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barData} layout="vertical">
                 <XAxis type="number" hide />
@@ -1054,7 +1068,11 @@ function UserStats({ bets, isConnected }: UserStatsProps) {
                   itemStyle={{ color: '#fff' }}
                   formatter={(value: number) => [`${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} smUSD`, '']}
                 />
-                <Bar dataKey="amount" fill="#F5B400" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="amount" radius={[0, 4, 4, 0]}>
+                  <Cell fill="#F5B400" />
+                  <Cell fill="#22c55e" />
+                  <Cell fill="#71717a" />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -1219,7 +1237,7 @@ function MyBetsSection({
     }
     return (
       <span className="text-xs font-bold text-white flex items-center gap-1.5">
-        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
         Active
       </span>
     );
