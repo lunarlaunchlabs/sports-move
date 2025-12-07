@@ -81,6 +81,7 @@ Sports Move follows a three-tier architecture with automated GitHub Actions for 
 ### System Diagram
 
 ```mermaid
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#1a1a2e', 'primaryTextColor': '#fff', 'primaryBorderColor': '#f5b400', 'lineColor': '#f5b400', 'secondaryColor': '#0d0d1a', 'tertiaryColor': '#2d2d2d'}}}%%
 flowchart TB
     subgraph USER["👤 User"]
         Browser["Browser"]
@@ -144,18 +145,20 @@ flowchart TB
     Betting <--> SMUSD
     Betting <--> Vault
 
-    %% Styling
-    classDef external fill:#f9f,stroke:#333,stroke-width:2px
-    classDef gha fill:#238636,stroke:#333,stroke-width:2px,color:#fff
-    classDef frontend fill:#61dafb,stroke:#333,stroke-width:2px
-    classDef api fill:#f5b400,stroke:#333,stroke-width:2px
-    classDef blockchain fill:#1a1a2e,stroke:#f5b400,stroke-width:2px,color:#fff
+    %% Styling - Dark theme with white text
+    classDef external fill:#4a1942,stroke:#fff,stroke-width:1px,color:#fff
+    classDef gha fill:#1a4d2e,stroke:#fff,stroke-width:1px,color:#fff
+    classDef frontend fill:#1a3a5c,stroke:#fff,stroke-width:1px,color:#fff
+    classDef api fill:#5c4a1a,stroke:#f5b400,stroke-width:2px,color:#fff
+    classDef blockchain fill:#0d0d1a,stroke:#f5b400,stroke-width:2px,color:#fff
+    classDef user fill:#2d2d2d,stroke:#fff,stroke-width:1px,color:#fff
 
     class OddsAPI,Faucet external
     class MarketsJob,ScoresJob,FundJob gha
     class UI,Wallet frontend
     class GetMarkets,GetBets,MintAPI,MarketsAPI,ScoresAPI api
     class SMUSD,Betting,Vault blockchain
+    class Browser user
 ```
 
 ### Component Overview
