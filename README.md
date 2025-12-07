@@ -76,44 +76,107 @@
 
 ## Architecture
 
-Sports Move follows a three-tier architecture:
+Sports Move follows a three-tier architecture with automated GitHub Actions for data synchronization.
 
+### System Diagram
+
+```mermaid
+flowchart TB
+    subgraph USER["👤 User"]
+        Browser["Browser"]
+    end
+
+    subgraph EXTERNAL["🌐 External Services"]
+        OddsAPI["The Odds API<br/>(Live Odds & Scores)"]
+        Faucet["Movement Faucet<br/>(MOVE Tokens)"]
+    end
+
+    subgraph GHA["⚙️ GitHub Actions"]
+        MarketsJob["rotate-markets-job<br/>⏱️ Every 1 min"]
+        ScoresJob["update-scores-job<br/>⏱️ Every 1 min"]
+        FundJob["fund-admin-wallet<br/>⏱️ Every 1 hour"]
+    end
+
+    subgraph FRONTEND["🖥️ Frontend (Next.js 16)"]
+        UI["React App<br/>Markets | Bets | Faucet"]
+        Wallet["Nightly Wallet<br/>Extension"]
+    end
+
+    subgraph API["🔌 API Layer (Next.js Routes)"]
+        GetMarkets["/api/get-markets"]
+        GetBets["/api/get-user-bets"]
+        MintAPI["/api/mint-smusd"]
+        MarketsAPI["/api/markets"]
+        ScoresAPI["/api/scores"]
+    end
+
+    subgraph BLOCKCHAIN["⛓️ Movement Network Testnet"]
+        subgraph CONTRACTS["Smart Contracts"]
+            SMUSD["smusd.move<br/>• mint()<br/>• register()<br/>• transfer()"]
+            Betting["sports_betting.move<br/>• create_market()<br/>• place_bet()<br/>• resolve_market()<br/>• settle_bets()"]
+        end
+        Vault["Resource Account<br/>(House Vault)"]
+    end
+
+    %% User flows
+    Browser --> UI
+    UI <--> Wallet
+    Wallet -->|"Sign Tx"| Betting
+    UI --> GetMarkets
+    UI --> GetBets
+    UI --> MintAPI
+
+    %% API to Blockchain
+    GetMarkets -->|"view"| Betting
+    GetBets -->|"view"| Betting
+    MintAPI -->|"mint"| SMUSD
+    MarketsAPI -->|"create/update"| Betting
+    ScoresAPI -->|"resolve & settle"| Betting
+
+    %% GitHub Actions flows
+    MarketsJob --> MarketsAPI
+    ScoresJob --> ScoresAPI
+    FundJob --> Faucet
+    MarketsAPI --> OddsAPI
+    ScoresAPI --> OddsAPI
+
+    %% Contract relationships
+    Betting <--> SMUSD
+    Betting <--> Vault
+
+    %% Styling
+    classDef external fill:#f9f,stroke:#333,stroke-width:2px
+    classDef gha fill:#238636,stroke:#333,stroke-width:2px,color:#fff
+    classDef frontend fill:#61dafb,stroke:#333,stroke-width:2px
+    classDef api fill:#f5b400,stroke:#333,stroke-width:2px
+    classDef blockchain fill:#1a1a2e,stroke:#f5b400,stroke-width:2px,color:#fff
+
+    class OddsAPI,Faucet external
+    class MarketsJob,ScoresJob,FundJob gha
+    class UI,Wallet frontend
+    class GetMarkets,GetBets,MintAPI,MarketsAPI,ScoresAPI api
+    class SMUSD,Betting,Vault blockchain
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         FRONTEND                                 │
-│  Next.js 16 • React 19 • Tailwind CSS v4 • Recharts             │
-│  - Wallet connection (Nightly)                                   │
-│  - Market browsing & filtering                                   │
-│  - Bet placement modal                                           │
-│  - User bet history & stats                                      │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                        API LAYER                                 │
-│  Next.js API Routes                                              │
-│  - /api/get-markets     → Fetch markets from blockchain         │
-│  - /api/get-user-bets   → Fetch user bet history                │
-│  - /api/mint-smusd      → Testnet faucet                        │
-│  - /api/markets         → Sync odds from The Odds API           │
-│  - /api/scores          → Resolve markets & settle bets         │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     SMART CONTRACTS                              │
-│  Movement Network (Aptos-compatible)                             │
-│  - smusd.move          → Stablecoin token                       │
-│  - sports_betting.move → Betting logic, markets, settlements    │
-└─────────────────────────────────────────────────────────────────┘
-```
 
-### Data Flow
+### Component Overview
 
-1. **Market Sync** — GitHub Actions cron job fetches odds from The Odds API and syncs to blockchain
-2. **User Bets** — Users connect wallet, select outcomes, and sign transactions
-3. **Score Updates** — Cron job fetches completed game scores
-4. **Settlement** — Contract automatically resolves markets and pays out winners
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| **Frontend** | Next.js 16, React 19, Tailwind v4 | User interface, wallet connection |
+| **API** | Next.js API Routes | Backend logic, contract interactions |
+| **Contracts** | Move Language | On-chain betting logic, token management |
+| **Automation** | GitHub Actions | Market sync, score updates, admin funding |
+
+### Data Flows
+
+| Flow | Path | Trigger |
+|------|------|---------|
+| **View Markets** | User → Frontend → API → Contract | User action |
+| **Place Bet** | User → Wallet → Contract | User signs tx |
+| **Get smUSD** | User → Frontend → API → Contract | User action |
+| **Sync Odds** | GH Actions → API → The Odds API → Contract | Every 1 min |
+| **Settle Bets** | GH Actions → API → The Odds API → Contract | Every 1 min |
+| **Fund Admin** | GH Actions → Faucet → Admin Wallet | Every 1 hour |
 
 ---
 
