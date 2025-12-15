@@ -1587,6 +1587,7 @@ function FaucetSection({ isConnected, walletAddress, onConnect, onBalanceUpdate,
         },
         options: {
           maxGasAmount: 200000, // High gas limit to avoid transaction failures
+          expireTimestamp: Math.floor(Date.now() / 1000) + 120, // 2 minute expiration
         },
       };
 
@@ -2341,6 +2342,7 @@ export default function SportsBook() {
           },
           options: {
             maxGasAmount: 200000, // High gas limit to avoid transaction failures
+            expireTimestamp: Math.floor(Date.now() / 1000) + 120, // 2 minute expiration
           },
         };
         await signAndSubmitTransaction(payload);
