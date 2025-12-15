@@ -5,8 +5,11 @@ import Image from 'next/image';
 import { FaFootballBall, FaBasketballBall, FaBaseballBall, FaHockeyPuck, FaFutbol, FaLink, FaMoneyBillWave, FaTint, FaLock, FaDice, FaDownload, FaGlobe, FaSearch, FaChevronLeft, FaChevronRight, FaTwitter, FaDiscord, FaGithub } from 'react-icons/fa';
 import { FaMoneyBill1Wave } from 'react-icons/fa6';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
+import { useUser, useClerk } from '@clerk/nextjs';
 import Confetti from 'react-confetti';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { WalletType } from './types';
+import { WalletConnectionDialog } from './components/WalletConnectionDialog';
 
 /**
  * Main App Color: #000000
@@ -2042,12 +2045,78 @@ export default function SportsBook() {
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const previousMarketsRef = useRef<string>('');
 
-  // Wallet hook
+  // Wallet hook (EXISTING - unchanged)
   const { connected, account, connect, disconnect, wallets, signAndSubmitTransaction } = useWallet();
 
-  // Fetch smUSD balance
+  // Clerk hooks for invisible wallet
+  const { isSignedIn } = useUser();
+  const { signOut } = useClerk();
+  
+  // Invisible wallet state
+  const [invisibleWalletAddress, setInvisibleWalletAddress] = useState<string | null>(null);
+  const [showWalletDialog, setShowWalletDialog] = useState(false);
+
+  // Unified state (derived from both wallet types)
+  const walletType: WalletType | null = invisibleWalletAddress 
+    ? WalletType.INVISIBLE 
+    : (connected ? WalletType.EXTERNAL : null);
+  const walletAddress: string | null = walletType === WalletType.INVISIBLE 
+    ? invisibleWalletAddress 
+    : account?.address?.toString() || null;
+  const isConnected = walletType !== null;
+
+  // Helper functions for invisible wallet API calls (memoized to prevent re-creation)
+  const fetchWithAuth = useCallback(async (url: string, options: RequestInit = {}) => {
+    const response = await fetch(url, {
+      ...options,
+      credentials: 'include', // Required: sends Clerk session cookies
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Request failed' }));
+      throw new Error(error.error || 'Request failed');
+    }
+    return response.json();
+  }, []);
+
+  const fetchInvisibleWallet = useCallback(async (): Promise<string> => {
+    // Retry logic to handle timing issues with Clerk session propagation
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const { address } = await fetchWithAuth('/api/shinami/wallet', { method: 'POST' });
+        return address;
+      } catch (error: any) {
+        lastError = error;
+        if (error.message === 'Unauthorized' && attempt < 2) {
+          // Wait a bit for session to propagate, then retry
+          console.log(`Waiting for session... attempt ${attempt + 1}`);
+          await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw lastError;
+  }, [fetchWithAuth]);
+
+  const executeInvisibleTransaction = useCallback(async (
+    functionName: string,
+    typeArguments: string[],
+    functionArguments: any[]
+  ): Promise<{ hash: string }> => {
+    return fetchWithAuth('/api/shinami/execute-transaction', {
+      method: 'POST',
+      body: JSON.stringify({ functionName, typeArguments, functionArguments }),
+    });
+  }, [fetchWithAuth]);
+
+  // Fetch smUSD balance (uses unified walletAddress)
   const fetchSmUsdBalance = useCallback(async () => {
-    if (!account?.address) {
+    if (!walletAddress) {
       setSmUsdBalance(null);
       return;
     }
@@ -2059,7 +2128,7 @@ export default function SportsBook() {
         body: JSON.stringify({
           function: `${CONTRACT_ADDRESS}::smusd::balance_of`,
           type_arguments: [],
-          arguments: [account.address.toString()]
+          arguments: [walletAddress]
         })
       });
       
@@ -2072,18 +2141,18 @@ export default function SportsBook() {
       console.error('Failed to fetch smUSD balance:', error);
       setSmUsdBalance(null);
     }
-  }, [account?.address]);
+  }, [walletAddress]);
 
-  // Fetch user bets
+  // Fetch user bets (uses unified walletAddress)
   const fetchUserBets = useCallback(async () => {
-    if (!account?.address) {
+    if (!walletAddress) {
       setUserBets([]);
       return;
     }
 
     setLoadingBets(true);
     try {
-      const response = await fetch(`/api/get-user-bets?address=${account.address.toString()}&filter=${betsFilter}`);
+      const response = await fetch(`/api/get-user-bets?address=${walletAddress}&filter=${betsFilter}`);
       const data = await response.json();
       setUserBets(data.bets || []);
     } catch (error) {
@@ -2092,7 +2161,7 @@ export default function SportsBook() {
     } finally {
       setLoadingBets(false);
     }
-  }, [account?.address, betsFilter]);
+  }, [walletAddress, betsFilter]);
 
   // Initialize app after wallet adapter is ready
   useEffect(() => {
@@ -2114,28 +2183,51 @@ export default function SportsBook() {
     return () => clearTimeout(fadeTimer);
   }, []);
 
-  // Fetch balance when wallet connects
+  // Fetch balance when wallet connects (uses unified state)
   useEffect(() => {
-    if (connected && account?.address) {
+    if (isConnected && walletAddress) {
       fetchSmUsdBalance();
     } else {
       setSmUsdBalance(null);
     }
-  }, [connected, account?.address, fetchSmUsdBalance]);
+  }, [isConnected, walletAddress, fetchSmUsdBalance]);
 
-  // Fetch user bets when wallet connects or filter changes
+  // Fetch user bets when wallet connects or filter changes (uses unified state)
   useEffect(() => {
-    if (connected && account?.address) {
+    if (isConnected && walletAddress) {
       fetchUserBets();
     } else {
       setUserBets([]);
     }
-  }, [connected, account?.address, betsFilter, fetchUserBets]);
+  }, [isConnected, walletAddress, betsFilter, fetchUserBets]);
 
-  // Handle wallet connect
-  const handleConnect = async () => {
+  // Auto-fetch invisible wallet when Clerk user signs in
+  useEffect(() => {
+    const fetchWalletForClerkUser = async () => {
+      if (isSignedIn && !invisibleWalletAddress && !connected) {
+        try {
+          console.log('Fetching invisible wallet for Clerk user...');
+          const address = await fetchInvisibleWallet();
+          console.log('Invisible wallet address:', address);
+          setInvisibleWalletAddress(address);
+        } catch (error) {
+          console.error('Failed to fetch invisible wallet:', error);
+        }
+      }
+    };
+    fetchWalletForClerkUser();
+  }, [isSignedIn, invisibleWalletAddress, connected, fetchInvisibleWallet]);
+
+  // Handle wallet connect - opens dialog instead of directly connecting
+  const handleConnect = () => {
+    setShowWalletDialog(true);
+  };
+
+  // Handle external wallet connection (called from dialog)
+  const handleConnectExternal = async () => {
+    setShowWalletDialog(false);
     try {
-      // Find Nightly wallet
+      // EXISTING LOGIC - completely unchanged
       const nightlyWallet = wallets?.find(w => w.name.toLowerCase().includes('nightly'));
       if (nightlyWallet) {
         await connect(nightlyWallet.name);
@@ -2147,10 +2239,26 @@ export default function SportsBook() {
     }
   };
 
-  // Handle wallet disconnect
+  // Handle invisible wallet connection (called after Clerk sign-in)
+  const handleInvisibleWalletConnected = async () => {
+    setShowWalletDialog(false);
+    try {
+      const address = await fetchInvisibleWallet();
+      setInvisibleWalletAddress(address);
+    } catch (error) {
+      console.error('Failed to fetch invisible wallet:', error);
+    }
+  };
+
+  // Handle wallet disconnect (handles both wallet types)
   const handleDisconnect = async () => {
     try {
-      await disconnect();
+      if (walletType === WalletType.INVISIBLE) {
+        await signOut();
+        setInvisibleWalletAddress(null);
+      } else {
+        await disconnect();
+      }
       setSmUsdBalance(null);
     } catch (error) {
       console.error('Failed to disconnect wallet:', error);
@@ -2195,9 +2303,9 @@ export default function SportsBook() {
     }
   }, [markets, betSelection]);
 
-  // Handle placing bet on contract
+  // Handle placing bet on contract (supports both wallet types)
   const handlePlaceBet = async (amount: number) => {
-    if (!betSelection || !account?.address) {
+    if (!betSelection || !walletAddress) {
       throw new Error('No bet selection or wallet not connected');
     }
 
@@ -2206,19 +2314,28 @@ export default function SportsBook() {
       // Convert amount to smallest unit (8 decimals)
       const amountInSmallestUnit = Math.floor(amount * 100_000_000);
 
-      const payload = {
-        data: {
-          function: `${CONTRACT_ADDRESS}::sports_betting::place_bet` as const,
-          typeArguments: [],
-          functionArguments: [
-            betSelection.market.game_id,
-            betSelection.teamName, // Use team name as outcome
-            amountInSmallestUnit.toString(),
-          ],
-        },
-      };
-
-      const response = await signAndSubmitTransaction(payload);
+      if (walletType === WalletType.INVISIBLE) {
+        // NEW PATH: Gasless transaction via backend API
+        await executeInvisibleTransaction(
+          `${CONTRACT_ADDRESS}::sports_betting::place_bet`,
+          [],
+          [betSelection.market.game_id, betSelection.teamName, amountInSmallestUnit.toString()]
+        );
+      } else {
+        // EXISTING PATH: External wallet flow (unchanged)
+        const payload = {
+          data: {
+            function: `${CONTRACT_ADDRESS}::sports_betting::place_bet` as const,
+            typeArguments: [],
+            functionArguments: [
+              betSelection.market.game_id,
+              betSelection.teamName, // Use team name as outcome
+              amountInSmallestUnit.toString(),
+            ],
+          },
+        };
+        await signAndSubmitTransaction(payload);
+      }
       
       // Wait a bit for transaction to process, then refresh balance and bets
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -2255,7 +2372,7 @@ export default function SportsBook() {
     setCurrentPage(1);
   }, [marketFilter, selectedSport]);
 
-  // Poll all data (markets, bets, balance) without full reload
+  // Poll all data (markets, bets, balance) without full reload (uses unified state)
   const pollData = useCallback(async () => {
     setIsPolling(true);
     const startTime = Date.now();
@@ -2264,8 +2381,8 @@ export default function SportsBook() {
       // Fetch all data in parallel
       const [marketsResponse] = await Promise.all([
         fetch(`/api/get-markets?filter=${marketFilter}&competition=${selectedSport}`),
-        connected && account?.address ? fetchSmUsdBalance() : Promise.resolve(),
-        connected && account?.address ? fetchUserBets() : Promise.resolve(),
+        isConnected && walletAddress ? fetchSmUsdBalance() : Promise.resolve(),
+        isConnected && walletAddress ? fetchUserBets() : Promise.resolve(),
       ]);
       
       const marketsData = await marketsResponse.json();
@@ -2288,7 +2405,7 @@ export default function SportsBook() {
       }
       setIsPolling(false);
     }
-  }, [marketFilter, selectedSport, connected, account?.address, fetchSmUsdBalance, fetchUserBets]);
+  }, [marketFilter, selectedSport, isConnected, walletAddress, fetchSmUsdBalance, fetchUserBets]);
 
   // Helper to start/restart the polling interval
   const startPollInterval = useCallback(() => {
@@ -2372,7 +2489,7 @@ export default function SportsBook() {
       <NavBar
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
-        walletAddress={account?.address?.toString() || null}
+        walletAddress={walletAddress}
         smUsdBalance={smUsdBalance}
         onConnect={handleConnect}
         onDisconnect={handleDisconnect}
@@ -2382,7 +2499,7 @@ export default function SportsBook() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-white">
           {/* Hero Section */}
-          <Hero isConnected={connected} onConnect={handleConnect} />
+          <Hero isConnected={isConnected} onConnect={handleConnect} />
 
           {/* Markets Section */}
           <section id="markets" className="py-8">
@@ -2500,7 +2617,7 @@ export default function SportsBook() {
                     key={market.game_id} 
                     market={market} 
                     onBetSelect={handleBetSelect}
-                    isWalletConnected={connected}
+                    isWalletConnected={isConnected}
                     isPolling={isPolling}
                   />
                 ))
@@ -2521,7 +2638,7 @@ export default function SportsBook() {
             <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4">
               My Bets
             </h2>
-            <UserStats bets={userBets} isConnected={connected} />
+            <UserStats bets={userBets} isConnected={isConnected} />
             <MyBetsSection
               bets={userBets}
               loading={loadingBets}
@@ -2531,7 +2648,7 @@ export default function SportsBook() {
               onSortChange={setBetsSort}
               viewMode={betsViewMode}
               onViewModeChange={setBetsViewMode}
-              isConnected={connected}
+              isConnected={isConnected}
               onConnect={handleConnect}
             />
           </section>
@@ -2581,11 +2698,20 @@ export default function SportsBook() {
 
           {/* Faucet Section */}
           <FaucetSection 
-            isConnected={connected}
-            walletAddress={account?.address?.toString() || null}
+            isConnected={isConnected}
+            walletAddress={walletAddress}
             onConnect={handleConnect}
             onBalanceUpdate={fetchSmUsdBalance}
-            signAndSubmitTransaction={signAndSubmitTransaction}
+            signAndSubmitTransaction={async (payload: any) => {
+              if (walletType === WalletType.INVISIBLE) {
+                // Extract function details from payload for API call
+                const { function: fn, typeArguments, functionArguments } = payload.data;
+                return executeInvisibleTransaction(fn, typeArguments || [], functionArguments || []);
+              } else {
+                // EXISTING: Use external wallet directly
+                return signAndSubmitTransaction(payload);
+              }
+            }}
           />
         </div>
       </main>
@@ -2681,6 +2807,14 @@ export default function SportsBook() {
         secondsUntilRefresh={secondsUntilRefresh}
         isPolling={isPolling}
         onManualRefresh={handleManualRefresh}
+      />
+
+      {/* Wallet Connection Dialog */}
+      <WalletConnectionDialog
+        isOpen={showWalletDialog}
+        onClose={() => setShowWalletDialog(false)}
+        onConnectExternal={handleConnectExternal}
+        onInvisibleWalletConnected={handleInvisibleWalletConnected}
       />
       </div>
     </>
