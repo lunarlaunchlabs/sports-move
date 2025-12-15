@@ -1585,6 +1585,9 @@ function FaucetSection({ isConnected, walletAddress, onConnect, onBalanceUpdate,
           typeArguments: [],
           functionArguments: [],
         },
+        options: {
+          maxGasAmount: 200000, // High gas limit to avoid transaction failures
+        },
       };
 
       await signAndSubmitTransaction(payload);
@@ -2325,7 +2328,7 @@ export default function SportsBook() {
           [betSelection.market.game_id, betSelection.teamName, amountInSmallestUnit.toString()]
         );
       } else {
-        // EXISTING PATH: External wallet flow (unchanged)
+        // EXISTING PATH: External wallet flow
         const payload = {
           data: {
             function: `${CONTRACT_ADDRESS}::sports_betting::place_bet` as const,
@@ -2335,6 +2338,9 @@ export default function SportsBook() {
               betSelection.teamName, // Use team name as outcome
               amountInSmallestUnit.toString(),
             ],
+          },
+          options: {
+            maxGasAmount: 200000, // High gas limit to avoid transaction failures
           },
         };
         await signAndSubmitTransaction(payload);
