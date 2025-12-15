@@ -1986,10 +1986,13 @@ function RefreshTimer({ secondsUntilRefresh, isPolling, onManualRefresh }: Refre
         </div>
       </div>
       
-      {/* Countdown Text */}
-      <span className="text-zinc-400 text-sm font-medium min-w-[32px]">
-        {isPolling ? '...' : `${secondsUntilRefresh}s`}
-      </span>
+      {/* Label and Countdown Text */}
+      <div className="flex flex-col items-start">
+        <span className="text-zinc-500 text-[10px] leading-tight">Auto-Refresh</span>
+        <span className="text-zinc-400 text-sm font-medium leading-tight">
+          {isPolling ? 'Updating...' : `${secondsUntilRefresh}s`}
+        </span>
+      </div>
       
       {/* Manual Refresh Button */}
       <button
