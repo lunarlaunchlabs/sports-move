@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import { FaFootballBall, FaBasketballBall, FaBaseballBall, FaHockeyPuck, FaFutbol, FaLink, FaMoneyBillWave, FaTint, FaLock, FaDice, FaDownload, FaGlobe, FaSearch, FaChevronLeft, FaChevronRight, FaTwitter, FaDiscord, FaGithub } from 'react-icons/fa';
+import { FaFootballBall, FaBasketballBall, FaBaseballBall, FaHockeyPuck, FaFutbol, FaLink, FaMoneyBillWave, FaTint, FaLock, FaDice, FaDownload, FaGlobe, FaSearch, FaChevronLeft, FaChevronRight, FaTwitter, FaDiscord, FaGithub, FaCoins } from 'react-icons/fa';
 import { FaMoneyBill1Wave } from 'react-icons/fa6';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useUser, useClerk } from '@clerk/nextjs';
@@ -1904,6 +1904,246 @@ function FaucetSection({ isConnected, walletAddress, onConnect, onBalanceUpdate,
   );
 }
 
+// MOVE Faucet Section Component
+const MOVE_FAUCET_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes in milliseconds
+const MOVE_FAUCET_STORAGE_KEY = 'move_faucet_cooldowns';
+
+// Helper to get cooldown data from localStorage (wallet address -> timestamp)
+function getMoveFaucetCooldowns(): Record<string, number> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const data = localStorage.getItem(MOVE_FAUCET_STORAGE_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch {
+    return {};
+  }
+}
+
+// Helper to set cooldown for a specific wallet
+function setMoveFaucetCooldown(walletAddress: string) {
+  if (typeof window === 'undefined') return;
+  const cooldowns = getMoveFaucetCooldowns();
+  cooldowns[walletAddress] = Date.now();
+  localStorage.setItem(MOVE_FAUCET_STORAGE_KEY, JSON.stringify(cooldowns));
+}
+
+// Helper to get remaining cooldown for a specific wallet
+function getWalletCooldownRemaining(walletAddress: string | null): number {
+  if (!walletAddress) return 0;
+  const cooldowns = getMoveFaucetCooldowns();
+  const lastUsed = cooldowns[walletAddress];
+  if (!lastUsed) return 0;
+  
+  const elapsed = Date.now() - lastUsed;
+  if (elapsed >= MOVE_FAUCET_COOLDOWN_MS) return 0;
+  return MOVE_FAUCET_COOLDOWN_MS - elapsed;
+}
+
+interface MoveFaucetSectionProps {
+  isConnected: boolean;
+  walletAddress: string | null;
+  walletType: WalletType | null;
+  onConnect: () => void;
+  onBalanceUpdate: () => void;
+}
+
+function MoveFaucetSection({ isConnected, walletAddress, walletType, onConnect, onBalanceUpdate }: MoveFaucetSectionProps) {
+  const [isFunding, setIsFunding] = useState(false);
+  const [fundResult, setFundResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
+
+  const isInvisibleWallet = walletType === WalletType.INVISIBLE;
+
+  // Check localStorage for cooldown on mount and when wallet changes
+  useEffect(() => {
+    const checkCooldown = () => {
+      const remaining = getWalletCooldownRemaining(walletAddress);
+      setCooldownRemaining(remaining);
+    };
+
+    checkCooldown();
+    
+    // Update countdown every second
+    const interval = setInterval(() => {
+      setCooldownRemaining(prev => {
+        if (prev <= 1000) return 0;
+        return prev - 1000;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [walletAddress]);
+
+  const handleFund = async () => {
+    if (!walletAddress || cooldownRemaining > 0) return;
+
+    setIsFunding(true);
+    setFundResult(null);
+
+    try {
+      const response = await fetch('/api/fund-wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: walletAddress }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setFundResult({ success: true, message: 'Successfully funded your wallet with 1 MOVE!' });
+        // Set cooldown in localStorage for this specific wallet
+        setMoveFaucetCooldown(walletAddress);
+        setCooldownRemaining(MOVE_FAUCET_COOLDOWN_MS);
+        // Refresh balance after a short delay
+        setTimeout(() => {
+          onBalanceUpdate();
+        }, 2000);
+      } else {
+        setFundResult({ success: false, message: data.error || 'Failed to fund wallet' });
+      }
+    } catch (error) {
+      console.error('Fund error:', error);
+      setFundResult({ success: false, message: 'Network error. Please try again.' });
+    } finally {
+      setIsFunding(false);
+    }
+  };
+
+  // Format remaining time as Xm Xs
+  const formatTimeRemaining = (ms: number) => {
+    const totalSeconds = Math.ceil(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}m ${seconds}s`;
+  };
+
+  const isOnCooldown = cooldownRemaining > 0;
+
+  return (
+    <section className="py-8">
+      <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4">
+        MOVE Faucet
+      </h2>
+      
+      <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 overflow-hidden">
+        <div className="p-6 sm:p-8">
+          {/* Header */}
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-[#F5B400]/10 flex items-center justify-center shrink-0">
+              <FaCoins className="text-2xl text-[#F5B400]" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-white mb-1">MOVE Token Faucet</h3>
+              <p className="text-zinc-400 text-sm">
+                Get free MOVE tokens for gas fees on Movement Testnet. Limited to once every 10 minutes.
+              </p>
+            </div>
+          </div>
+
+          {!isConnected ? (
+            // Not connected state
+            <div className="text-center py-8">
+              <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <p className="text-zinc-400 mb-4">Connect your wallet to receive MOVE tokens</p>
+              <button
+                onClick={onConnect}
+                className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-6 py-3 rounded-lg transition-colors duration-200"
+              >
+                Connect Wallet
+              </button>
+            </div>
+          ) : isInvisibleWallet ? (
+            // Shinami/Clerk wallet - gas is sponsored
+            <div className="text-center py-8">
+              <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h4 className="text-white font-semibold text-lg mb-2">Gas Fees Sponsored!</h4>
+              <p className="text-zinc-400 mb-4 max-w-md mx-auto">
+                You&apos;re signed in with Clerk, so your gas fees are automatically sponsored through Shinami. 
+                You don&apos;t need to request MOVE tokens!
+              </p>
+              <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-400 px-4 py-2 rounded-lg text-sm">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Gasless transactions enabled
+              </div>
+            </div>
+          ) : (
+            // External wallet - show faucet
+            <div className="space-y-6">
+              {/* Result Message */}
+              {fundResult && (
+                <div className={`rounded-lg p-4 ${
+                  fundResult.success 
+                    ? 'bg-green-500/10 border border-green-500/30' 
+                    : 'bg-red-500/10 border border-red-500/30'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    {fundResult.success ? (
+                      <svg className="w-5 h-5 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                    <p className={fundResult.success ? 'text-green-400' : 'text-red-400'}>
+                      {fundResult.message}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Fund Button */}
+              <button
+                onClick={handleFund}
+                disabled={isFunding || isOnCooldown}
+                className="w-full bg-[#F5B400] hover:bg-[#d9a000] disabled:bg-zinc-700 disabled:text-zinc-500 text-black font-bold py-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+              >
+                {isFunding ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Funding...
+                  </>
+                ) : isOnCooldown ? (
+                  <>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Try again in {formatTimeRemaining(cooldownRemaining)}
+                  </>
+                ) : (
+                  <>
+                    <FaCoins className="text-lg" />
+                    Get 1 MOVE
+                  </>
+                )}
+              </button>
+
+              {/* Info */}
+              <p className="text-zinc-500 text-xs text-center">
+                MOVE tokens are used for gas fees on the Movement Network Testnet.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // Splash Screen Component
 function SplashScreen({ isFadingOut }: { isFadingOut: boolean }) {
   const [hasMounted, setHasMounted] = useState(false);
@@ -2723,6 +2963,15 @@ export default function SportsBook() {
                 return signAndSubmitTransaction(payload);
               }
             }}
+          />
+
+          {/* MOVE Faucet Section */}
+          <MoveFaucetSection 
+            isConnected={isConnected}
+            walletAddress={walletAddress}
+            walletType={walletType}
+            onConnect={handleConnect}
+            onBalanceUpdate={fetchSmUsdBalance}
           />
         </div>
       </main>
