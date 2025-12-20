@@ -11,6 +11,9 @@ concurrency:
   group: sports-move-scores
   cancel-in-progress: false
 
+env:
+  PRODUCTION_URL: https://sports-move.vercel.app
+
 jobs:
   update-scores:
     name: Update Scores
@@ -26,11 +29,10 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: npm install aptos
-
-      - name: Run Scores Update Script
-        run: node scripts/update-scores.js
+      - name: Run Scores Job
+        run: node scripts/sports-move-job.js --job=scores
+        env:
+          PRODUCTION_URL: ${{ env.PRODUCTION_URL }}
 
       - name: Job Summary
         if: always()
@@ -38,6 +40,7 @@ jobs:
           echo "## 🏆 Scores Update Job" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Timestamp:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target:** ${{ env.PRODUCTION_URL }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Sports:** NFL, NBA, NHL, MLB" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ "${{ job.status }}" == "success" ]; then
