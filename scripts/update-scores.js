@@ -133,7 +133,7 @@ async function resolveMarket(score) {
   const txn = await client.generateTransaction(admin.address(), payload);
   const signedTxn = await client.signTransaction(admin, txn);
   const result = await client.submitTransaction(signedTxn);
-  await client.waitForTransaction(result.hash);
+  await client.waitForTransaction(result.hash, { timeoutSecs: 120 });
 
   return result.hash;
 }
@@ -156,7 +156,7 @@ async function cancelMarket(gameId) {
   const txn = await client.generateTransaction(admin.address(), payload);
   const signedTxn = await client.signTransaction(admin, txn);
   const result = await client.submitTransaction(signedTxn);
-  await client.waitForTransaction(result.hash);
+  await client.waitForTransaction(result.hash, { timeoutSecs: 120 });
 
   return result.hash;
 }
@@ -179,7 +179,7 @@ async function settleBets(gameId) {
   const txn = await client.generateTransaction(admin.address(), payload);
   const signedTxn = await client.signTransaction(admin, txn);
   const result = await client.submitTransaction(signedTxn);
-  await client.waitForTransaction(result.hash);
+  await client.waitForTransaction(result.hash, { timeoutSecs: 120 });
 
   return result.hash;
 }

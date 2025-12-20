@@ -121,7 +121,7 @@ async function createMarket(market) {
     const txn = await client.generateTransaction(admin.address(), payload);
     const signedTxn = await client.signTransaction(admin, txn);
     const result = await client.submitTransaction(signedTxn);
-    await client.waitForTransaction(result.hash);
+    await client.waitForTransaction(result.hash, { timeoutSecs: 120 });
 
     return result.hash;
   } catch (error) {
@@ -180,7 +180,7 @@ async function updateMarketOdds(market) {
   const txn = await client.generateTransaction(admin.address(), payload);
   const signedTxn = await client.signTransaction(admin, txn);
   const result = await client.submitTransaction(signedTxn);
-  await client.waitForTransaction(result.hash);
+  await client.waitForTransaction(result.hash, { timeoutSecs: 120 });
 
   return result.hash;
 }
