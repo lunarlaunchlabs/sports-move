@@ -2,8 +2,8 @@ name: Fund Admin Wallet
 
 on:
   schedule:
-    # Run every 1 hour
-    - cron: '0 * * * *'
+    # Run once a day at midnight UTC
+    - cron: '0 0 * * *'
   workflow_dispatch:
     # Allow manual trigger from GitHub UI
 
