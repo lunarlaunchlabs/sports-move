@@ -11,9 +11,6 @@ concurrency:
   group: sports-move-markets
   cancel-in-progress: false
 
-env:
-  PRODUCTION_URL: https://sports-move.vercel.app
-
 jobs:
   rotate-markets:
     name: Rotate Markets
@@ -29,10 +26,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Run Markets Job
-        run: node scripts/sports-move-job.js --job=markets
-        env:
-          PRODUCTION_URL: ${{ env.PRODUCTION_URL }}
+      - name: Install dependencies
+        run: npm install aptos
+
+      - name: Run Markets Rotation Script
+        run: node scripts/rotate-markets.js
 
       - name: Job Summary
         if: always()
@@ -40,7 +38,6 @@ jobs:
           echo "## 🏈 Markets Rotation Job" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Timestamp:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
-          echo "- **Target:** ${{ env.PRODUCTION_URL }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Sports:** NFL, NBA, NHL, MLB" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ "${{ job.status }}" == "success" ]; then
