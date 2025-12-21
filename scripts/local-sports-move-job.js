@@ -1,20 +1,28 @@
 #!/usr/bin/env node
 
 /**
- * Sports Move Job Script
+ * Sports Move Job Script (Self-Managing Background Service)
  * 
- * This script is designed to be run by GitHub Actions to sync markets and scores
+ * This script runs continuously in the background, syncing markets and scores
  * for all supported sports on the Sports Move platform.
  * 
+ * QUIET HOURS: 1AM - 8AM local time
+ * - The script will pause during these hours to avoid unnecessary API calls
+ * - If a job is running when 1AM hits, it will complete before pausing
+ * - At 8AM sharp, the script automatically resumes
+ * 
  * Usage:
- *   node sports-move-job.js --job=markets
- *   node sports-move-job.js --job=scores
+ *   node local-sports-move-job.js
  * 
  * Environment:
  *   PRODUCTION_URL - Base URL for the API (default: https://sports-move.vercel.app)
  */
 
 const PRODUCTION_URL = process.env.PRODUCTION_URL || 'https://sports-move.vercel.app';
+
+// Quiet hours configuration (local time)
+const QUIET_HOURS_START = 1;  // 1 AM
+const QUIET_HOURS_END = 8;    // 8 AM
 
 // Sport market keys from the-odds-api.ts
 const SPORT_MARKET_KEYS = [
@@ -23,6 +31,64 @@ const SPORT_MARKET_KEYS = [
   'icehockey_nhl',
   'baseball_mlb'
 ];
+
+/**
+ * Check if current time is within quiet hours (1AM - 8AM)
+ */
+function isQuietHours() {
+  const now = new Date();
+  const hour = now.getHours();
+  return hour >= QUIET_HOURS_START && hour < QUIET_HOURS_END;
+}
+
+/**
+ * Calculate milliseconds until quiet hours end (8AM)
+ */
+function msUntilQuietHoursEnd() {
+  const now = new Date();
+  const wakeTime = new Date(now);
+  
+  // Set to 8AM today
+  wakeTime.setHours(QUIET_HOURS_END, 0, 0, 0);
+  
+  // If we're past 8AM today (shouldn't happen if isQuietHours is true), set to tomorrow
+  if (wakeTime <= now) {
+    wakeTime.setDate(wakeTime.getDate() + 1);
+  }
+  
+  return wakeTime.getTime() - now.getTime();
+}
+
+/**
+ * Format milliseconds as human-readable duration
+ */
+function formatDuration(ms) {
+  const hours = Math.floor(ms / (1000 * 60 * 60));
+  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+  return `${hours}h ${minutes}m`;
+}
+
+/**
+ * Sleep until quiet hours end
+ */
+async function sleepUntilWakeTime() {
+  const sleepDuration = msUntilQuietHoursEnd();
+  const wakeTime = new Date(Date.now() + sleepDuration);
+  
+  console.log('\n' + '🌙'.repeat(25));
+  console.log(`😴 ENTERING QUIET HOURS (${QUIET_HOURS_START}AM - ${QUIET_HOURS_END}AM)`);
+  console.log(`⏰ Current time: ${new Date().toLocaleTimeString()}`);
+  console.log(`🌅 Will resume at: ${wakeTime.toLocaleTimeString()}`);
+  console.log(`💤 Sleeping for: ${formatDuration(sleepDuration)}`);
+  console.log('🌙'.repeat(25) + '\n');
+  
+  await new Promise(resolve => setTimeout(resolve, sleepDuration));
+  
+  console.log('\n' + '☀️'.repeat(25));
+  console.log(`🌅 WAKING UP - Quiet hours ended!`);
+  console.log(`⏰ Current time: ${new Date().toLocaleTimeString()}`);
+  console.log('☀️'.repeat(25) + '\n');
+}
 
 /**
  * Makes a GET request to the specified endpoint
@@ -143,14 +209,57 @@ function printSummary(results, jobType) {
   return failed === 0;
 }
 
-async function main() {
+/**
+ * Run a single cycle of markets + scores jobs
+ */
+async function runJobCycle() {
+  console.log(`\n🚀 Starting job cycle at ${new Date().toLocaleString()}`);
+  
   const results1 = await runMarketsJob();
   printSummary(results1, 'markets');
+  
   const results2 = await runScoresJob();
   printSummary(results2, 'scores');
+  
+  console.log(`✅ Job cycle completed at ${new Date().toLocaleString()}`);
 }
 
-while (true) {
-  await main();
-  await new Promise(resolve => setTimeout(resolve, 10000));
+/**
+ * Main loop with quiet hours support
+ */
+async function main() {
+  console.log('═'.repeat(60));
+  console.log('🏀 SPORTS MOVE LOCAL JOB SERVICE');
+  console.log('═'.repeat(60));
+  console.log(`📡 Target: ${PRODUCTION_URL}`);
+  console.log(`🌙 Quiet Hours: ${QUIET_HOURS_START}AM - ${QUIET_HOURS_END}AM local time`);
+  console.log(`⏰ Started at: ${new Date().toLocaleString()}`);
+  console.log('═'.repeat(60));
+  
+  while (true) {
+    // Check if we're in quiet hours before starting a new job
+    if (isQuietHours()) {
+      await sleepUntilWakeTime();
+    }
+    
+    // Run the job cycle
+    await runJobCycle();
+    
+    // Wait 10 seconds before next cycle
+    // But first check if we just entered quiet hours
+    if (isQuietHours()) {
+      console.log(`\n🌙 Quiet hours started - will pause after this cycle completes`);
+      // Don't wait, go straight to the top of the loop to sleep
+      continue;
+    }
+    
+    console.log(`\n⏳ Waiting 60 seconds before next cycle...`);
+    await new Promise(resolve => setTimeout(resolve, 60000));
+  }
 }
+
+// Start the service
+main().catch(error => {
+  console.error('💥 Fatal error:', error);
+  process.exit(1);
+});
