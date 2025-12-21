@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import { FaFootballBall, FaBasketballBall, FaBaseballBall, FaHockeyPuck, FaFutbol, FaLink, FaMoneyBillWave, FaTint, FaLock, FaDice, FaDownload, FaGlobe, FaSearch, FaChevronLeft, FaChevronRight, FaTwitter, FaDiscord, FaGithub, FaCoins } from 'react-icons/fa';
+import { FaFootballBall, FaBasketballBall, FaBaseballBall, FaHockeyPuck, FaFutbol, FaLink, FaMoneyBillWave, FaTint, FaLock, FaDice, FaDownload, FaGlobe, FaSearch, FaChevronLeft, FaChevronRight, FaTwitter, FaDiscord, FaGithub, FaCoins, FaPlay, FaYoutube, FaHandshake, FaBook, FaCogs, FaRocket } from 'react-icons/fa';
 import { FaMoneyBill1Wave } from 'react-icons/fa6';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useUser, useClerk } from '@clerk/nextjs';
@@ -139,7 +139,8 @@ function NavBar({
     { label: 'Markets', href: '#markets' },
     { label: 'My Bets', href: '#my-bets' },
     { label: 'Faucet', href: '#faucet' },
-    { label: 'How It Works', href: '#how-it-works' },
+    { label: 'Quick Start', href: '#quick-start' },
+    { label: 'Videos', href: '#videos' },
   ];
 
   const truncateAddress = (address: string) => {
@@ -1517,6 +1518,136 @@ function MyBetsSection({
         </p>
       )}
     </div>
+  );
+}
+
+// Video Section Component
+interface VideoItem {
+  id: string;
+  title: string;
+  description: string;
+  youtubeId: string;
+  icon: React.ReactNode;
+}
+
+const videos: VideoItem[] = [
+  {
+    id: 'welcome',
+    title: 'Welcome to SportsMove',
+    description: 'An introduction to decentralized sports betting on Movement Network',
+    youtubeId: 'dQw4w9WgXcQ', // Placeholder - replace with actual YouTube ID
+    icon: <FaHandshake className="w-5 h-5" />,
+  },
+  {
+    id: 'how-to-use',
+    title: 'How to Use SportsMove',
+    description: 'A step-by-step guide to placing your first bet',
+    youtubeId: 'dQw4w9WgXcQ', // Placeholder - replace with actual YouTube ID
+    icon: <FaBook className="w-5 h-5" />,
+  },
+  {
+    id: 'technicals',
+    title: 'The Technicals',
+    description: 'Deep dive into the smart contracts and architecture',
+    youtubeId: 'dQw4w9WgXcQ', // Placeholder - replace with actual YouTube ID
+    icon: <FaCogs className="w-5 h-5" />,
+  },
+  {
+    id: 'roadmap',
+    title: 'Our Road to Production and Revenue Model',
+    description: 'Our vision for mainnet launch and sustainable growth',
+    youtubeId: 'dQw4w9WgXcQ', // Placeholder - replace with actual YouTube ID
+    icon: <FaRocket className="w-5 h-5" />,
+  },
+];
+
+function VideoSection() {
+  const [selectedVideo, setSelectedVideo] = useState<VideoItem>(videos[0]);
+
+  return (
+    <section id="videos" className="py-8">
+      <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4 flex items-center gap-3">
+        <FaYoutube className="text-red-500" />
+        Videos
+      </h2>
+      
+      <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+        <div className="flex flex-col lg:flex-row">
+          {/* Video List - Left Side */}
+          <div className="lg:w-1/3 border-b lg:border-b-0 lg:border-r border-zinc-800">
+            <div className="p-4">
+              <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-4">
+                Video Library
+              </h3>
+              <div className="space-y-2">
+                {videos.map((video) => (
+                  <button
+                    key={video.id}
+                    onClick={() => setSelectedVideo(video)}
+                    className={`w-full text-left p-4 rounded-xl transition-all duration-200 group ${
+                      selectedVideo.id === video.id
+                        ? 'bg-[#F5B400]/10 border border-[#F5B400]/50'
+                        : 'bg-zinc-800/50 border border-transparent hover:bg-zinc-800 hover:border-zinc-700'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-0.5 p-2 rounded-lg transition-colors ${
+                        selectedVideo.id === video.id
+                          ? 'bg-[#F5B400] text-black'
+                          : 'bg-zinc-700 text-zinc-400 group-hover:bg-zinc-600 group-hover:text-white'
+                      }`}>
+                        {video.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className={`font-semibold text-sm mb-1 transition-colors ${
+                          selectedVideo.id === video.id ? 'text-[#F5B400]' : 'text-white'
+                        }`}>
+                          {video.title}
+                        </h4>
+                        <p className="text-xs text-zinc-500 line-clamp-2">
+                          {video.description}
+                        </p>
+                      </div>
+                      {selectedVideo.id === video.id && (
+                        <FaPlay className="w-3 h-3 text-[#F5B400] mt-1 shrink-0" />
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Video Player - Right Side */}
+          <div className="lg:w-2/3 p-4 lg:p-6">
+            <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl ring-1 ring-zinc-700">
+              <iframe
+                className="w-full h-full"
+                src={`https://www.youtube.com/embed/${selectedVideo.youtubeId}?rel=0&modestbranding=1`}
+                title={selectedVideo.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+            
+            {/* Video Info */}
+            <div className="mt-4 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-[#F5B400] rounded-lg text-black">
+                  {selectedVideo.icon}
+                </div>
+                <h3 className="text-lg font-bold text-white">
+                  {selectedVideo.title}
+                </h3>
+              </div>
+              <p className="text-zinc-400 text-sm">
+                {selectedVideo.description}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -2904,9 +3035,37 @@ export default function SportsBook() {
             />
           </section>
 
-          <section id="how-it-works" className="py-8">
+          {/* Faucet Section */}
+          <FaucetSection 
+            isConnected={isConnected}
+            walletAddress={walletAddress}
+            onConnect={handleConnect}
+            onBalanceUpdate={fetchSmUsdBalance}
+            signAndSubmitTransaction={async (payload: any) => {
+              if (walletType === WalletType.INVISIBLE) {
+                // Extract function details from payload for API call
+                const { function: fn, typeArguments, functionArguments } = payload.data;
+                return executeInvisibleTransaction(fn, typeArguments || [], functionArguments || []);
+              } else {
+                // EXISTING: Use external wallet directly
+                return signAndSubmitTransaction(payload);
+              }
+            }}
+          />
+
+          {/* MOVE Faucet Section */}
+          <MoveFaucetSection 
+            isConnected={isConnected}
+            walletAddress={walletAddress}
+            walletType={walletType}
+            onConnect={handleConnect}
+            onBalanceUpdate={fetchSmUsdBalance}
+          />
+
+          {/* Quick Start Section */}
+          <section id="quick-start" className="py-8">
             <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4">
-              How It Works
+              Quick Start
             </h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <a 
@@ -2947,32 +3106,8 @@ export default function SportsBook() {
             </div>
           </section>
 
-          {/* Faucet Section */}
-          <FaucetSection 
-            isConnected={isConnected}
-            walletAddress={walletAddress}
-            onConnect={handleConnect}
-            onBalanceUpdate={fetchSmUsdBalance}
-            signAndSubmitTransaction={async (payload: any) => {
-              if (walletType === WalletType.INVISIBLE) {
-                // Extract function details from payload for API call
-                const { function: fn, typeArguments, functionArguments } = payload.data;
-                return executeInvisibleTransaction(fn, typeArguments || [], functionArguments || []);
-              } else {
-                // EXISTING: Use external wallet directly
-                return signAndSubmitTransaction(payload);
-              }
-            }}
-          />
-
-          {/* MOVE Faucet Section */}
-          <MoveFaucetSection 
-            isConnected={isConnected}
-            walletAddress={walletAddress}
-            walletType={walletType}
-            onConnect={handleConnect}
-            onBalanceUpdate={fetchSmUsdBalance}
-          />
+          {/* Videos Section */}
+          <VideoSection />
         </div>
       </main>
 
@@ -3012,8 +3147,9 @@ export default function SportsBook() {
               <ul className="space-y-2">
                 <li><a href="#markets" className="text-zinc-400 hover:text-white transition-colors text-sm">Markets</a></li>
                 <li><a href="#my-bets" className="text-zinc-400 hover:text-white transition-colors text-sm">My Bets</a></li>
-                <li><a href="#how-it-works" className="text-zinc-400 hover:text-white transition-colors text-sm">How It Works</a></li>
-                <li><a href="#faucet" className="text-zinc-400 hover:text-white transition-colors text-sm">Get smUSD</a></li>
+                <li><a href="#faucet" className="text-zinc-400 hover:text-white transition-colors text-sm">Faucet</a></li>
+                <li><a href="#quick-start" className="text-zinc-400 hover:text-white transition-colors text-sm">Quick Start</a></li>
+                <li><a href="#videos" className="text-zinc-400 hover:text-white transition-colors text-sm">Videos</a></li>
               </ul>
             </div>
 
