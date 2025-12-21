@@ -253,8 +253,8 @@ async function main() {
       continue;
     }
     
-    console.log(`\n⏳ Waiting 60 seconds before next cycle...`);
-    await new Promise(resolve => setTimeout(resolve, 60000));
+    console.log(`\n⏳ Waiting 2 minutes before next cycle...`);
+    await new Promise(resolve => setTimeout(resolve, 120000));
   }
 }
 
