@@ -125,7 +125,7 @@ async function fetchEndpoint(endpoint, sport) {
       console.log(`   📊 Scores: ${data.blockchain.total} total, ${data.blockchain.resolved} resolved, ${data.blockchain.settled} settled, ${data.blockchain.skipped} skipped`);
     }
     
-    return { success: true, sport, data, duration };
+    return { success: true, sport, duration };
   } catch (error) {
     const duration = Date.now() - startTime;
     console.error(`❌ Failed (${duration}ms) - ${endpoint} for ${sport}: ${error.message}`);
