@@ -76,7 +76,7 @@
 
 ## Architecture
 
-Sports Move follows a three-tier architecture with automated GitHub Actions for data synchronization.
+Sports Move follows a three-tier architecture with a Fly.io background service for continuous data synchronization.
 
 ### System Diagram
 
@@ -92,9 +92,11 @@ flowchart TB
         Faucet["Movement Faucet<br/>(MOVE Tokens)"]
     end
 
-    subgraph GHA["⚙️ GitHub Actions"]
-        MarketsJob["rotate-markets-job<br/>⏱️ Every 1 min"]
-        ScoresJob["update-scores-job<br/>⏱️ Every 1 min"]
+    subgraph FLYIO["🚀 Fly.io Background Service"]
+        JobService["sports-move-job<br/>⏱️ Every 30 sec<br/>🌙 Quiet: 1AM-8AM"]
+    end
+
+    subgraph GHA["⚙️ GitHub Actions (Backup)"]
         FundJob["fund-admin-wallet<br/>⏱️ Every 1 hour"]
     end
 
@@ -134,9 +136,9 @@ flowchart TB
     MarketsAPI -->|"create/update"| Betting
     ScoresAPI -->|"resolve & settle"| Betting
 
-    %% GitHub Actions flows
-    MarketsJob --> MarketsAPI
-    ScoresJob --> ScoresAPI
+    %% Fly.io and GitHub Actions flows
+    JobService --> MarketsAPI
+    JobService --> ScoresAPI
     FundJob --> Faucet
     MarketsAPI --> OddsAPI
     ScoresAPI --> OddsAPI
@@ -154,8 +156,10 @@ flowchart TB
     classDef user fill:#2d2d2d,stroke:#fff,stroke-width:1px,color:#fff
 
     class OddsAPI,Faucet external
-    class MarketsJob,ScoresJob,FundJob gha
+    class JobService flyio
+    class FundJob gha
     class UI,Wallet frontend
+    classDef flyio fill:#4a1a5c,stroke:#fff,stroke-width:1px,color:#fff
     class GetMarkets,GetBets,MintAPI,MarketsAPI,ScoresAPI api
     class SMUSD,Betting,Vault blockchain
     class Browser user
@@ -168,7 +172,8 @@ flowchart TB
 | **Frontend** | Next.js 16, React 19, Tailwind v4 | User interface, wallet connection |
 | **API** | Next.js API Routes | Backend logic, contract interactions |
 | **Contracts** | Move Language | On-chain betting logic, token management |
-| **Automation** | GitHub Actions | Market sync, score updates, admin funding |
+| **Background Jobs** | Fly.io | Market sync, score updates (every 30s) |
+| **Automation** | GitHub Actions | Admin wallet funding (backup for jobs) |
 
 ### Data Flows
 
@@ -177,8 +182,8 @@ flowchart TB
 | **View Markets** | User → Frontend → API → Contract | User action |
 | **Place Bet** | User → Wallet → Contract | User signs tx |
 | **Get smUSD** | User → Frontend → API → Contract | User action |
-| **Sync Odds** | GH Actions → API → The Odds API → Contract | Every 1 min |
-| **Settle Bets** | GH Actions → API → The Odds API → Contract | Every 1 min |
+| **Sync Odds** | Fly.io → API → The Odds API → Contract | Every 30 sec |
+| **Settle Bets** | Fly.io → API → The Odds API → Contract | Every 30 sec |
 | **Fund Admin** | GH Actions → Faucet → Admin Wallet | Every 1 hour |
 
 ---
@@ -486,6 +491,11 @@ sports-move/
 │       ├── rotate-markets-job.yml    # Market sync cron
 │       ├── update-scores-job.yml     # Score update cron
 │       └── fund-admin-wallet.yml     # Admin funding cron
+├── fly-job/
+│   ├── job.js                        # Fly.io background worker
+│   ├── Dockerfile                    # Container definition
+│   ├── fly.toml                      # Fly.io config
+│   └── package.json                  # Worker dependencies
 ├── public/
 │   ├── SPORTS_MOVE_LOGO.png
 │   └── SPORTS_MOVE_ENTRY_LOGO.png
@@ -588,15 +598,17 @@ The frontend is deployed automatically via Vercel:
 
 ## GitHub Actions Automation
 
-Three automated workflows keep the platform running:
+GitHub Actions provide backup automation and admin wallet funding.
 
-### Rotate Markets Job
+> **Note:** The markets and scores jobs are **disabled by default** since Fly.io handles this. They can be enabled as a backup if needed.
+
+### Rotate Markets Job (Backup - Disabled)
 
 **File:** `.github/workflows/rotate-markets-job.yml`
 
-**Schedule:** Every minute (`* * * * *`)
+**Schedule:** Every 5 minutes (`*/5 * * * *`) — *disabled in GitHub*
 
-**Purpose:** Syncs live odds from The Odds API to the blockchain
+**Purpose:** Backup for syncing live odds (primary: Fly.io)
 
 ```bash
 # Manual trigger
@@ -607,13 +619,13 @@ node scripts/sports-move-job.js --job=markets
 - Creates new markets or updates existing odds
 - Skips resolved/cancelled markets
 
-### Update Scores Job
+### Update Scores Job (Backup - Disabled)
 
 **File:** `.github/workflows/update-scores-job.yml`
 
-**Schedule:** Every minute (`* * * * *`)
+**Schedule:** Every minute (`* * * * *`) — *disabled in GitHub*
 
-**Purpose:** Resolves completed games and settles bets
+**Purpose:** Backup for resolving games (primary: Fly.io)
 
 ```bash
 # Manual trigger
@@ -625,7 +637,7 @@ node scripts/sports-move-job.js --job=scores
 - Resolves markets on-chain
 - Settles all bets (pays winners, updates house balance)
 
-### Fund Admin Wallet Job
+### Fund Admin Wallet Job (Active)
 
 **File:** `.github/workflows/fund-admin-wallet.yml`
 
@@ -645,6 +657,114 @@ All workflows support:
 - GitHub Actions job summaries
 - 10-15 minute timeouts
 - Concurrency groups (markets/scores)
+
+---
+
+## Fly.io Background Job (Primary)
+
+The `fly-job/` folder contains the primary background service that runs on [Fly.io](https://fly.io/), syncing markets and scores continuously.
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| **Continuous Running** | Runs 24/7 instead of cron-triggered |
+| **30-Second Cycles** | Syncs markets and scores every 30 seconds |
+| **Quiet Hours** | Pauses 1AM-8AM local time to save API calls |
+| **Auto-Restart** | Automatically restarts on crash |
+| **Low Cost** | ~$2-3/month on Fly.io's smallest VM |
+
+### Files
+
+```
+fly-job/
+├── job.js          # Background worker script
+├── Dockerfile      # Container definition
+├── fly.toml        # Fly.io configuration
+└── package.json    # Node.js dependencies
+```
+
+### Deployment
+
+```bash
+# Install Fly.io CLI (if not installed)
+brew install flyctl
+
+# Authenticate
+fly auth login
+
+# Deploy from fly-job folder
+cd fly-job
+fly deploy
+```
+
+### Useful Commands
+
+```bash
+cd fly-job
+
+# View logs
+fly logs
+
+# Check status
+fly status
+
+# Stop the job
+fly machine stop
+
+# Start the job
+fly machine start
+
+# Open dashboard
+fly dashboard
+
+# Redeploy after changes
+fly deploy
+```
+
+### Configuration
+
+The job is configured in `fly-job/fly.toml`:
+
+```toml
+app = "sports-move-job"
+primary_region = "iad"          # Virginia (close to Vercel)
+
+[env]
+  PRODUCTION_URL = "https://sports-move.vercel.app"
+
+[[restart]]
+  policy = "always"             # Auto-restart on any exit
+  max_retries = 0               # Unlimited retries
+
+[[vm]]
+  size = "shared-cpu-1x"        # Smallest VM
+  memory = "256mb"
+```
+
+### API Usage
+
+| Metric | Value |
+|--------|-------|
+| Cycles per day | ~557 |
+| API calls per cycle | 8 (4 markets + 4 scores) |
+| API calls per month | ~138,000 |
+| Vercel Pro limit | 1,000,000 |
+| Usage | ~14% |
+
+### GitHub Actions vs Fly.io
+
+| Aspect | GitHub Actions (Backup) | Fly.io (Primary) |
+|--------|-------------------------|------------------|
+| Status | Disabled | **Active** |
+| Trigger | Cron (every 1-5 min) | Continuous (30s cycles) |
+| Cost | Free (within limits) | ~$2-3/month |
+| Uptime | Limited by GH Actions minutes | 24/7 |
+| Quiet Hours | No | Yes (1AM-8AM) |
+| Latency | Cold start each run | Always warm |
+| Monitoring | GitHub UI | Fly.io dashboard + logs |
+
+**Current Setup:** Fly.io runs as primary. GitHub Actions workflows are disabled but can be re-enabled as backup if needed.
 
 ---
 
