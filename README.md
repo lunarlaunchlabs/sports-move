@@ -66,11 +66,92 @@
 
 ### User Experience
 
-- **Nightly Wallet Integration** — Seamless wallet connection
+- **Dual Wallet Options** — Nightly wallet OR invisible wallet (Clerk sign-in)
+- **Gasless Transactions** — Shinami sponsors gas for invisible wallet users
 - **Live Countdown Timers** — See when games start
 - **Bet Confirmation Confetti** — Celebratory animations on successful bets
 - **User Statistics Dashboard** — Track your betting performance with charts
 - **Responsive Design** — Works on desktop and mobile
+
+---
+
+## Wallet Integration
+
+Sports Move supports two parallel wallet options, letting users choose between traditional crypto wallets and a Web2-like experience.
+
+### Option 1: Nightly Wallet (Traditional)
+
+For crypto-native users who already have a wallet.
+
+| Aspect | Details |
+|--------|---------|
+| **Connection** | Browser extension |
+| **Gas Fees** | User pays in MOVE |
+| **Private Keys** | User-controlled |
+| **Best For** | Crypto enthusiasts |
+
+### Option 2: Invisible Wallet (Clerk + Shinami)
+
+For mainstream users who want a Web2 experience without managing keys or gas.
+
+| Aspect | Details |
+|--------|---------|
+| **Sign-In** | Email, Google, or social via Clerk |
+| **Wallet Creation** | Automatic (one per user) |
+| **Gas Fees** | Sponsored by Shinami (free for user) |
+| **Private Keys** | Managed by Shinami's key infrastructure |
+| **Best For** | Non-crypto users, frictionless onboarding |
+
+### How It Works
+
+```mermaid
+%%{init: {'theme': 'dark'}}%%
+sequenceDiagram
+    participant User
+    participant Clerk
+    participant Shinami
+    participant Contract
+
+    User->>Clerk: Sign in (email/social)
+    Clerk-->>User: Authenticated (userId)
+    User->>Shinami: Get/Create Wallet
+    Shinami-->>User: Wallet Address
+    User->>Shinami: Place Bet (gasless)
+    Shinami->>Contract: Execute Transaction
+    Shinami-->>User: Transaction Hash
+```
+
+### API Routes
+
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/shinami/wallet` | POST | Get or create invisible wallet for authenticated user |
+| `/api/shinami/execute-transaction` | POST | Execute gasless transaction via Shinami |
+
+### Shinami Service
+
+The `ShinamiService` class handles all invisible wallet operations:
+
+```typescript
+// Get or create wallet (deterministic per userId)
+const address = await ShinamiService.getOrCreateWallet(userId);
+
+// Execute gasless transaction
+const result = await ShinamiService.executeTransaction(userId, transaction);
+```
+
+**Key Features:**
+- Deterministic wallet derivation — same userId always gets same wallet
+- Session tokens — 10-minute validity for security
+- On-chain initialization — wallet is initialized on first use
+- Gasless execution — Shinami sponsors all transaction fees
+
+### Configuration
+
+| Service | Purpose |
+|---------|---------|
+| **Clerk** | Authentication (email, social sign-in) |
+| **Shinami** | Invisible wallets + gas sponsorship on Movement Testnet |
 
 ---
 
@@ -818,9 +899,17 @@ primary_region = "iad"          # Virginia (close to Vercel)
 | Package | Version | Purpose |
 |---------|---------|---------|
 | aptos | 1.22.1 | Aptos SDK |
+| @aptos-labs/ts-sdk | latest | Transaction building |
 | @aptos-labs/wallet-adapter-core | 7.8.0 | Wallet core |
 | @aptos-labs/wallet-adapter-react | 7.2.2 | React wallet hooks |
 | @nightlylabs/aptos-wallet-adapter-plugin | 0.2.12 | Nightly wallet |
+
+### Authentication & Invisible Wallets
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| @clerk/nextjs | latest | Email/social authentication |
+| @shinami/clients | latest | Invisible wallets + gas sponsorship |
 
 ### Development
 
@@ -834,17 +923,18 @@ primary_region = "iad"          # Virginia (close to Vercel)
 
 ## Usage Guide
 
-### 1. Install Nightly Wallet
+### Choose Your Wallet Method
 
-Download from [nightly.app](https://nightly.app/) and install the browser extension.
+**Option A: Invisible Wallet (Recommended for New Users)**
+1. Click "Sign In" on the Sports Move website
+2. Sign in with email or Google via Clerk
+3. Your wallet is created automatically — no setup needed!
+4. Gas fees are sponsored — betting is completely free
 
-### 2. Connect to Testnet
-
-In Nightly wallet settings, switch to Movement Network testnet.
-
-### 3. Connect Wallet
-
-Click "Connect Wallet" on the Sports Move website.
+**Option B: Nightly Wallet (For Crypto Users)**
+1. Download from [nightly.app](https://nightly.app/) and install the browser extension
+2. In Nightly wallet settings, switch to Movement Network testnet
+3. Click "Connect Wallet" on the Sports Move website
 
 ### 4. Get smUSD from Faucet
 
