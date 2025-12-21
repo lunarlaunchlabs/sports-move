@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import Image from 'next/image';
-import { FaFootballBall, FaBasketballBall, FaBaseballBall, FaHockeyPuck, FaFutbol, FaLink, FaMoneyBillWave, FaTint, FaLock, FaDice, FaDownload, FaGlobe, FaSearch, FaChevronLeft, FaChevronRight, FaTwitter, FaDiscord, FaGithub, FaCoins, FaPlay, FaYoutube, FaHandshake, FaBook, FaCogs, FaRocket } from 'react-icons/fa';
-import { FaMoneyBill1Wave } from 'react-icons/fa6';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
-import { useUser, useClerk } from '@clerk/nextjs';
+import { useClerk, useUser } from '@clerk/nextjs';
+import Image from 'next/image';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Confetti from 'react-confetti';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { WalletType } from './types';
+import { FaBaseballBall, FaBasketballBall, FaBook, FaChartLine, FaChevronLeft, FaChevronRight, FaCogs, FaCoins, FaDice, FaDiscord, FaDownload, FaFootballBall, FaFutbol, FaGithub, FaGlobe, FaHandshake, FaHockeyPuck, FaLink, FaLock, FaPlay, FaRocket, FaSearch, FaTint, FaTwitter, FaYoutube } from 'react-icons/fa';
+import { FaMoneyBill1Wave } from 'react-icons/fa6';
+import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { WalletConnectionDialog } from './components/WalletConnectionDialog';
+import { WalletType } from './types';
 
 /**
  * Main App Color: #000000
@@ -127,13 +127,13 @@ interface NavBarProps {
   onDisconnect: () => void;
 }
 
-function NavBar({ 
-  isMobileMenuOpen, 
-  setIsMobileMenuOpen, 
-  walletAddress, 
+function NavBar({
+  isMobileMenuOpen,
+  setIsMobileMenuOpen,
+  walletAddress,
   smUsdBalance,
   onConnect,
-  onDisconnect 
+  onDisconnect
 }: NavBarProps) {
   const navLinks = [
     { label: 'Markets', href: '#markets' },
@@ -180,7 +180,7 @@ function NavBar({
                 {link.label}
               </a>
             ))}
-            
+
             {walletAddress ? (
               <div className="flex items-center gap-3">
                 <div className="bg-zinc-800 rounded-lg px-4 py-2 flex items-center gap-2">
@@ -188,7 +188,7 @@ function NavBar({
                     {smUsdBalance !== null ? `${formatBalance(smUsdBalance)} smUSD` : '...'}
                   </span>
                 </div>
-                <button 
+                <button
                   onClick={onDisconnect}
                   className="bg-zinc-800 hover:bg-zinc-700 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2"
                 >
@@ -199,7 +199,7 @@ function NavBar({
                 </button>
               </div>
             ) : (
-              <button 
+              <button
                 onClick={onConnect}
                 className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-5 py-2 rounded-lg transition-colors duration-200"
               >
@@ -250,9 +250,8 @@ function NavBar({
 
         {/* Mobile Navigation */}
         <div
-          className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
-            isMobileMenuOpen ? 'max-h-80 pb-4' : 'max-h-0'
-          }`}
+          className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${isMobileMenuOpen ? 'max-h-80 pb-4' : 'max-h-0'
+            }`}
         >
           <div className="flex flex-col space-y-3 pt-2">
             {navLinks.map((link) => (
@@ -265,7 +264,7 @@ function NavBar({
                 {link.label}
               </a>
             ))}
-            
+
             {walletAddress ? (
               <div className="space-y-2 pt-2">
                 <div className="bg-zinc-800 rounded-lg px-4 py-3 text-center">
@@ -274,7 +273,7 @@ function NavBar({
                   </p>
                   <p className="text-zinc-400 text-sm">{truncateAddress(walletAddress)}</p>
                 </div>
-                <button 
+                <button
                   onClick={() => {
                     onDisconnect();
                     setIsMobileMenuOpen(false);
@@ -285,7 +284,7 @@ function NavBar({
                 </button>
               </div>
             ) : (
-              <button 
+              <button
                 onClick={() => {
                   onConnect();
                   setIsMobileMenuOpen(false);
@@ -313,7 +312,7 @@ function Hero({ isConnected, onConnect }: HeroProps) {
     <section className="py-12 sm:py-20 text-center relative overflow-hidden rounded-2xl bg-zinc-950/50">
       {/* Animated Sports Icons Background */}
       <SportsIconsBackground />
-      
+
       {/* Hero Content */}
       <div className="relative z-10">
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">
@@ -325,7 +324,7 @@ function Hero({ isConnected, onConnect }: HeroProps) {
           Fast, transparent, and secure.
         </p>
         {!isConnected && (
-          <button 
+          <button
             onClick={onConnect}
             className="bg-[#F5B400] hover:bg-[#d9a000] text-black font-semibold px-8 py-3 rounded-lg text-lg transition-colors duration-200"
           >
@@ -378,10 +377,10 @@ function SportsIconsBackground() {
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div 
+      <div
         className="absolute animate-sports-scroll"
-        style={{ 
-          width: cols * tileSize, 
+        style={{
+          width: cols * tileSize,
           height: rows * tileSize,
           left: -tileSize * 2,
           top: -tileSize * 2,
@@ -475,13 +474,13 @@ function BetModal({ selection, balance, onClose, onPlaceBet, isPlacingBet }: Bet
     }
   };
 
-  const potentialPayout = parsedAmount > 0 
+  const potentialPayout = parsedAmount > 0
     ? calculatePayout(parsedAmount, selection.odds, selection.oddsPositive)
     : 0;
 
   const handleSubmit = async () => {
     if (!isValidAmount) return;
-    
+
     setError(null);
     try {
       await onPlaceBet(parsedAmount);
@@ -517,7 +516,7 @@ function BetModal({ selection, balance, onClose, onPlaceBet, isPlacingBet }: Bet
   if (isSuccess && confirmedBet) {
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div 
+        <div
           ref={modalRef}
           className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-md overflow-hidden relative"
         >
@@ -572,7 +571,7 @@ function BetModal({ selection, balance, onClose, onPlaceBet, isPlacingBet }: Bet
                   {selection.market.away_team} @ {selection.market.home_team}
                 </span>
               </div>
-              
+
               {/* Pick */}
               <div className="flex justify-between items-center">
                 <span className="text-zinc-400 text-sm">Your Pick</span>
@@ -675,13 +674,12 @@ function BetModal({ selection, balance, onClose, onPlaceBet, isPlacingBet }: Bet
                 onChange={(e) => handleAmountChange(e.target.value)}
                 placeholder="0.00"
                 disabled={isPlacingBet}
-                className={`w-full bg-zinc-800 border rounded-lg px-4 py-3 text-white text-lg font-medium placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#F5B400] disabled:opacity-50 ${
-                  hasInsufficientBalance ? 'border-red-500' : 'border-zinc-700'
-                }`}
+                className={`w-full bg-zinc-800 border rounded-lg px-4 py-3 text-white text-lg font-medium placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#F5B400] disabled:opacity-50 ${hasInsufficientBalance ? 'border-red-500' : 'border-zinc-700'
+                  }`}
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500">smUSD</span>
             </div>
-            
+
             {/* Quick amount buttons */}
             <div className="flex gap-2 mt-2">
               {[25, 50, 75, 100].map((percent) => (
@@ -866,20 +864,18 @@ function MarketCard({ market, onBetSelect, isWalletConnected, isPolling = false 
           <button
             onClick={() => handleBetClick('away')}
             disabled={!canBet}
-            className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 relative ${
-              canBet
-                ? 'border-zinc-700 hover:border-[#F5B400] hover:bg-zinc-800 cursor-pointer'
-                : 'border-zinc-800 opacity-60 cursor-not-allowed'
-            }`}
+            className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 relative ${canBet
+              ? 'border-zinc-700 hover:border-[#F5B400] hover:bg-zinc-800 cursor-pointer'
+              : 'border-zinc-800 opacity-60 cursor-not-allowed'
+              }`}
           >
             <span className="font-medium text-white">{market.away_team}</span>
             {isPolling ? (
               <span className="w-12 h-5 bg-zinc-700 rounded animate-pulse" />
             ) : (
               <span
-                className={`font-bold text-lg ${
-                  market.away_odds_positive ? 'text-green-400' : 'text-white'
-                }`}
+                className={`font-bold text-lg ${market.away_odds_positive ? 'text-green-400' : 'text-white'
+                  }`}
               >
                 {formatOdds(market.away_odds, market.away_odds_positive)}
               </span>
@@ -890,27 +886,25 @@ function MarketCard({ market, onBetSelect, isWalletConnected, isPolling = false 
           <button
             onClick={() => handleBetClick('home')}
             disabled={!canBet}
-            className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 relative ${
-              canBet
-                ? 'border-zinc-700 hover:border-[#F5B400] hover:bg-zinc-800 cursor-pointer'
-                : 'border-zinc-800 opacity-60 cursor-not-allowed'
-            }`}
+            className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 relative ${canBet
+              ? 'border-zinc-700 hover:border-[#F5B400] hover:bg-zinc-800 cursor-pointer'
+              : 'border-zinc-800 opacity-60 cursor-not-allowed'
+              }`}
           >
             <span className="font-medium text-white">{market.home_team}</span>
             {isPolling ? (
               <span className="w-12 h-5 bg-zinc-700 rounded animate-pulse" />
             ) : (
               <span
-                className={`font-bold text-lg ${
-                  market.home_odds_positive ? 'text-green-400' : 'text-white'
-                }`}
+                className={`font-bold text-lg ${market.home_odds_positive ? 'text-green-400' : 'text-white'
+                  }`}
               >
                 {formatOdds(market.home_odds, market.home_odds_positive)}
               </span>
             )}
           </button>
         </div>
-        
+
         {/* Connect wallet hint */}
         {(isOpen || isLive) && !isWalletConnected && (
           <p className="text-zinc-500 text-xs text-center mt-3">
@@ -953,29 +947,29 @@ function UserStats({ bets, isConnected }: UserStatsProps) {
 
   const totalBets = bets.length;
   const activeBets = bets.filter(b => !b.is_settled && !b.is_cancelled).length;
-  
+
   // Calculate wins and losses from settled bets
   const settledBetsList = bets.filter(b => b.is_settled && !b.is_cancelled);
   const wonBets = settledBetsList.filter(b => b.winning_outcome && b.outcome === b.winning_outcome);
   const lostBets = settledBetsList.filter(b => b.winning_outcome && b.outcome !== b.winning_outcome);
-  
+
   // Calculate amounts
   const totalWagered = bets.reduce((sum, b) => sum + parseInt(b.amount), 0) / 100_000_000;
   const totalWon = wonBets.reduce((sum, b) => sum + parseInt(b.potential_payout), 0) / 100_000_000;
   const totalLost = lostBets.reduce((sum, b) => sum + parseInt(b.amount), 0) / 100_000_000;
   const netProfit = totalWon - totalLost;
-  
+
   // Pie chart data - only show if there are settled bets with outcomes
   const hasSettledData = wonBets.length > 0 || lostBets.length > 0;
   const pieData = hasSettledData
     ? [
-        { name: 'Paid Out', value: wonBets.length },
-        { name: 'Settled', value: lostBets.length },
-      ]
+      { name: 'Paid Out', value: wonBets.length },
+      { name: 'Settled', value: lostBets.length },
+    ]
     : [
-        { name: 'Active', value: activeBets },
-        { name: 'Pending', value: settledBetsList.length },
-      ];
+      { name: 'Active', value: activeBets },
+      { name: 'Pending', value: settledBetsList.length },
+    ];
 
   // Bar chart data
   const barData = [
@@ -987,7 +981,7 @@ function UserStats({ bets, isConnected }: UserStatsProps) {
   return (
     <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 mb-6">
       <h3 className="text-lg font-bold text-white mb-4">Your Stats</h3>
-      
+
       {/* Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
         <div className="bg-zinc-800/50 rounded-lg p-3">
@@ -1035,7 +1029,7 @@ function UserStats({ bets, isConnected }: UserStatsProps) {
                   <Cell fill="#22c55e" />
                   <Cell fill="#71717a" />
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px' }}
                   itemStyle={{ color: '#fff' }}
                 />
@@ -1061,13 +1055,13 @@ function UserStats({ bets, isConnected }: UserStatsProps) {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barData} layout="vertical">
                 <XAxis type="number" hide />
-                <YAxis 
-                  type="category" 
-                  dataKey="name" 
+                <YAxis
+                  type="category"
+                  dataKey="name"
                   tick={{ fill: '#a1a1aa', fontSize: 10 }}
                   width={55}
                 />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px' }}
                   itemStyle={{ color: '#fff' }}
                   formatter={(value: number) => [`${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} smUSD`, '']}
@@ -1138,11 +1132,10 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
             <button
               key={idx}
               onClick={() => onPageChange(page)}
-              className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                currentPage === page
-                  ? 'bg-[#F5B400] text-black'
-                  : 'bg-zinc-800 text-white hover:bg-zinc-700'
-              }`}
+              className={`w-10 h-10 rounded-lg font-medium transition-colors ${currentPage === page
+                ? 'bg-[#F5B400] text-black'
+                : 'bg-zinc-800 text-white hover:bg-zinc-700'
+                }`}
             >
               {page}
             </button>
@@ -1203,9 +1196,9 @@ function MyBetsSection({
 
   // Format helpers
   const formatBetAmount = (amount: string) => {
-    return (parseInt(amount) / 100_000_000).toLocaleString(undefined, { 
-      minimumFractionDigits: 2, 
-      maximumFractionDigits: 2 
+    return (parseInt(amount) / 100_000_000).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     });
   };
 
@@ -1332,11 +1325,10 @@ function MyBetsSection({
         <div className="flex items-center gap-2 bg-zinc-800 rounded-lg p-1">
           <button
             onClick={() => onViewModeChange('tiles')}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              viewMode === 'tiles'
-                ? 'bg-[#F5B400] text-black'
-                : 'text-zinc-400 hover:text-white'
-            }`}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'tiles'
+              ? 'bg-[#F5B400] text-black'
+              : 'text-zinc-400 hover:text-white'
+              }`}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -1344,11 +1336,10 @@ function MyBetsSection({
           </button>
           <button
             onClick={() => onViewModeChange('table')}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              viewMode === 'table'
-                ? 'bg-[#F5B400] text-black'
-                : 'text-zinc-400 hover:text-white'
-            }`}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'table'
+              ? 'bg-[#F5B400] text-black'
+              : 'text-zinc-400 hover:text-white'
+              }`}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -1567,10 +1558,10 @@ function VideoSection() {
   return (
     <section id="videos" className="py-8">
       <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4 flex items-center gap-3">
-        <FaYoutube className="text-red-500" />
+        <FaYoutube className="text-[#F5B400]" />
         Videos
       </h2>
-      
+
       <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
         <div className="flex flex-col lg:flex-row">
           {/* Video List - Left Side */}
@@ -1584,24 +1575,21 @@ function VideoSection() {
                   <button
                     key={video.id}
                     onClick={() => setSelectedVideo(video)}
-                    className={`w-full text-left p-4 rounded-xl transition-all duration-200 group ${
-                      selectedVideo.id === video.id
-                        ? 'bg-[#F5B400]/10 border border-[#F5B400]/50'
-                        : 'bg-zinc-800/50 border border-transparent hover:bg-zinc-800 hover:border-zinc-700'
-                    }`}
+                    className={`w-full text-left p-4 rounded-xl transition-all duration-200 group ${selectedVideo.id === video.id
+                      ? 'bg-[#F5B400]/10 border border-[#F5B400]/50'
+                      : 'bg-zinc-800/50 border border-transparent hover:bg-zinc-800 hover:border-zinc-700'
+                      }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`mt-0.5 p-2 rounded-lg transition-colors ${
-                        selectedVideo.id === video.id
-                          ? 'bg-[#F5B400] text-black'
-                          : 'bg-zinc-700 text-zinc-400 group-hover:bg-zinc-600 group-hover:text-white'
-                      }`}>
+                      <div className={`mt-0.5 p-2 rounded-lg transition-colors ${selectedVideo.id === video.id
+                        ? 'bg-[#F5B400] text-black'
+                        : 'bg-zinc-700 text-zinc-400 group-hover:bg-zinc-600 group-hover:text-white'
+                        }`}>
                         {video.icon}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className={`font-semibold text-sm mb-1 transition-colors ${
-                          selectedVideo.id === video.id ? 'text-[#F5B400]' : 'text-white'
-                        }`}>
+                        <h4 className={`font-semibold text-sm mb-1 transition-colors ${selectedVideo.id === video.id ? 'text-[#F5B400]' : 'text-white'
+                          }`}>
                           {video.title}
                         </h4>
                         <p className="text-xs text-zinc-500 line-clamp-2">
@@ -1629,7 +1617,7 @@ function VideoSection() {
                 allowFullScreen
               />
             </div>
-            
+
             {/* Video Info */}
             <div className="mt-4 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700">
               <div className="flex items-center gap-3 mb-2">
@@ -1684,7 +1672,7 @@ function FaucetSection({ isConnected, walletAddress, onConnect, onBalanceUpdate,
           arguments: [walletAddress]
         })
       });
-      
+
       const data = await response.json();
       setIsRegistered(data && data[0] === true);
     } catch (error) {
@@ -1723,10 +1711,10 @@ function FaucetSection({ isConnected, walletAddress, onConnect, onBalanceUpdate,
       };
 
       await signAndSubmitTransaction(payload);
-      
+
       // Wait for transaction to process
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       setIsRegistered(true);
       setMintResult({ success: true, message: 'Successfully registered for smUSD! You can now mint tokens.' });
     } catch (error: any) {
@@ -1794,10 +1782,11 @@ function FaucetSection({ isConnected, walletAddress, onConnect, onBalanceUpdate,
 
   return (
     <section id="faucet" className="py-8">
-      <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4">
+      <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4 flex items-center gap-3">
+        <FaTint className="text-[#F5B400]" />
         smUSD Faucet
       </h2>
-      
+
       <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 overflow-hidden">
         <div className="p-6 sm:p-8">
           {/* Header */}
@@ -1870,11 +1859,10 @@ function FaucetSection({ isConnected, walletAddress, onConnect, onBalanceUpdate,
 
               {/* Result Message */}
               {mintResult && (
-                <div className={`rounded-lg p-4 ${
-                  mintResult.success 
-                    ? 'bg-green-500/10 border border-green-500/30' 
-                    : 'bg-red-500/10 border border-red-500/30'
-                }`}>
+                <div className={`rounded-lg p-4 ${mintResult.success
+                  ? 'bg-green-500/10 border border-green-500/30'
+                  : 'bg-red-500/10 border border-red-500/30'
+                  }`}>
                   <div className="flex items-center gap-3">
                     {mintResult.success ? (
                       <svg className="w-5 h-5 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1966,11 +1954,10 @@ function FaucetSection({ isConnected, walletAddress, onConnect, onBalanceUpdate,
                       setMintResult(null);
                     }}
                     disabled={isMinting}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      mintAmount === amount.toString()
-                        ? 'bg-[#F5B400] text-black'
-                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-                    } disabled:opacity-50`}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${mintAmount === amount.toString()
+                      ? 'bg-[#F5B400] text-black'
+                      : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                      } disabled:opacity-50`}
                   >
                     {amount} smUSD
                   </button>
@@ -1979,11 +1966,10 @@ function FaucetSection({ isConnected, walletAddress, onConnect, onBalanceUpdate,
 
               {/* Result Message */}
               {mintResult && (
-                <div className={`rounded-lg p-4 ${
-                  mintResult.success 
-                    ? 'bg-green-500/10 border border-green-500/30' 
-                    : 'bg-red-500/10 border border-red-500/30'
-                }`}>
+                <div className={`rounded-lg p-4 ${mintResult.success
+                  ? 'bg-green-500/10 border border-green-500/30'
+                  : 'bg-red-500/10 border border-red-500/30'
+                  }`}>
                   <div className="flex items-center gap-3">
                     {mintResult.success ? (
                       <svg className="w-5 h-5 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2064,7 +2050,7 @@ function getWalletCooldownRemaining(walletAddress: string | null): number {
   const cooldowns = getMoveFaucetCooldowns();
   const lastUsed = cooldowns[walletAddress];
   if (!lastUsed) return 0;
-  
+
   const elapsed = Date.now() - lastUsed;
   if (elapsed >= MOVE_FAUCET_COOLDOWN_MS) return 0;
   return MOVE_FAUCET_COOLDOWN_MS - elapsed;
@@ -2093,7 +2079,7 @@ function MoveFaucetSection({ isConnected, walletAddress, walletType, onConnect, 
     };
 
     checkCooldown();
-    
+
     // Update countdown every second
     const interval = setInterval(() => {
       setCooldownRemaining(prev => {
@@ -2152,10 +2138,11 @@ function MoveFaucetSection({ isConnected, walletAddress, walletType, onConnect, 
 
   return (
     <section className="py-8">
-      <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4">
+      <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4 flex items-center gap-3">
+        <FaCoins className="text-[#F5B400]" />
         MOVE Faucet
       </h2>
-      
+
       <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 overflow-hidden">
         <div className="p-6 sm:p-8">
           {/* Header */}
@@ -2197,7 +2184,7 @@ function MoveFaucetSection({ isConnected, walletAddress, walletType, onConnect, 
               </div>
               <h4 className="text-white font-semibold text-lg mb-2">Gas Fees Sponsored!</h4>
               <p className="text-zinc-400 mb-4 max-w-md mx-auto">
-                You&apos;re signed in with Clerk, so your gas fees are automatically sponsored through Shinami. 
+                You&apos;re signed in with Clerk, so your gas fees are automatically sponsored through Shinami.
                 You don&apos;t need to request MOVE tokens!
               </p>
               <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-400 px-4 py-2 rounded-lg text-sm">
@@ -2212,11 +2199,10 @@ function MoveFaucetSection({ isConnected, walletAddress, walletType, onConnect, 
             <div className="space-y-6">
               {/* Result Message */}
               {fundResult && (
-                <div className={`rounded-lg p-4 ${
-                  fundResult.success 
-                    ? 'bg-green-500/10 border border-green-500/30' 
-                    : 'bg-red-500/10 border border-red-500/30'
-                }`}>
+                <div className={`rounded-lg p-4 ${fundResult.success
+                  ? 'bg-green-500/10 border border-green-500/30'
+                  : 'bg-red-500/10 border border-red-500/30'
+                  }`}>
                   <div className="flex items-center gap-3">
                     {fundResult.success ? (
                       <svg className="w-5 h-5 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2279,13 +2265,13 @@ function MoveFaucetSection({ isConnected, walletAddress, walletType, onConnect, 
 function SplashScreen({ isFadingOut }: { isFadingOut: boolean }) {
   const [hasMounted, setHasMounted] = useState(false);
   const [showTagline, setShowTagline] = useState(false);
-  
+
   useEffect(() => {
     // Trigger fade-in after mount
     const mountTimer = setTimeout(() => setHasMounted(true), 50);
     // Animate tagline in after logo appears
     const taglineTimer = setTimeout(() => setShowTagline(true), 400);
-    
+
     return () => {
       clearTimeout(mountTimer);
       clearTimeout(taglineTimer);
@@ -2293,10 +2279,9 @@ function SplashScreen({ isFadingOut }: { isFadingOut: boolean }) {
   }, []);
 
   return (
-    <div 
-      className={`fixed inset-0 z-50 bg-black flex items-center justify-center transition-opacity duration-500 ${
-        isFadingOut ? 'opacity-0 pointer-events-none' : hasMounted ? 'opacity-100' : 'opacity-0'
-      }`}
+    <div
+      className={`fixed inset-0 z-50 bg-black flex items-center justify-center transition-opacity duration-500 ${isFadingOut ? 'opacity-0 pointer-events-none' : hasMounted ? 'opacity-100' : 'opacity-0'
+        }`}
     >
       <div className="relative">
         <Image
@@ -2307,10 +2292,9 @@ function SplashScreen({ isFadingOut }: { isFadingOut: boolean }) {
           priority
         />
         {/* Tagline positioned over the black space in the logo */}
-        <p 
-          className={`absolute bottom-2 left-1/2 -translate-x-1/2 text-white text-xl font-bold tracking-widest uppercase transition-all duration-700 whitespace-nowrap ${
-            showTagline ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          }`}
+        <p
+          className={`absolute bottom-2 left-1/2 -translate-x-1/2 text-white text-xl font-bold tracking-widest uppercase transition-all duration-700 whitespace-nowrap ${showTagline ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+            }`}
         >
           Get your <span className="text-[#F5B400]">move</span> on
         </p>
@@ -2328,7 +2312,7 @@ interface RefreshTimerProps {
 
 function RefreshTimer({ secondsUntilRefresh, isPolling, onManualRefresh }: RefreshTimerProps) {
   const progress = ((60 - secondsUntilRefresh) / 60) * 100;
-  
+
   return (
     <div className="fixed bottom-4 right-4 z-40 flex items-center gap-2 bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-full px-3 py-2 shadow-lg">
       {/* Circular Progress */}
@@ -2360,7 +2344,7 @@ function RefreshTimer({ secondsUntilRefresh, isPolling, onManualRefresh }: Refre
           </svg>
         </div>
       </div>
-      
+
       {/* Label and Countdown Text */}
       <div className="flex flex-col items-start">
         <span className="text-zinc-500 text-[10px] leading-tight">Auto-Refresh</span>
@@ -2368,7 +2352,7 @@ function RefreshTimer({ secondsUntilRefresh, isPolling, onManualRefresh }: Refre
           {isPolling ? 'Updating...' : `${secondsUntilRefresh}s`}
         </span>
       </div>
-      
+
       {/* Manual Refresh Button */}
       <button
         onClick={onManualRefresh}
@@ -2376,17 +2360,17 @@ function RefreshTimer({ secondsUntilRefresh, isPolling, onManualRefresh }: Refre
         className="p-1.5 rounded-full hover:bg-zinc-700 transition-colors disabled:cursor-not-allowed"
         title="Refresh now"
       >
-        <svg 
-          className={`w-4 h-4 transition-colors ${isPolling ? 'text-[#F5B400] animate-spin' : 'text-zinc-400 hover:text-zinc-300'}`} 
-          fill="none" 
-          viewBox="0 0 24 24" 
+        <svg
+          className={`w-4 h-4 transition-colors ${isPolling ? 'text-[#F5B400] animate-spin' : 'text-zinc-400 hover:text-zinc-300'}`}
+          fill="none"
+          viewBox="0 0 24 24"
           stroke="currentColor"
         >
-          <path 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            strokeWidth={2} 
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
           />
         </svg>
       </button>
@@ -2415,7 +2399,7 @@ export default function SportsBook() {
   const [isSplashFading, setIsSplashFading] = useState(false);
   const [isMainAppVisible, setIsMainAppVisible] = useState(false);
   const hasInitialized = useRef(false);
-  
+
   // Polling state
   const [isPolling, setIsPolling] = useState(false);
   const [secondsUntilRefresh, setSecondsUntilRefresh] = useState(60);
@@ -2429,17 +2413,17 @@ export default function SportsBook() {
   // Clerk hooks for invisible wallet
   const { isSignedIn } = useUser();
   const { signOut } = useClerk();
-  
+
   // Invisible wallet state
   const [invisibleWalletAddress, setInvisibleWalletAddress] = useState<string | null>(null);
   const [showWalletDialog, setShowWalletDialog] = useState(false);
 
   // Unified state (derived from both wallet types)
-  const walletType: WalletType | null = invisibleWalletAddress 
-    ? WalletType.INVISIBLE 
+  const walletType: WalletType | null = invisibleWalletAddress
+    ? WalletType.INVISIBLE
     : (connected ? WalletType.EXTERNAL : null);
-  const walletAddress: string | null = walletType === WalletType.INVISIBLE 
-    ? invisibleWalletAddress 
+  const walletAddress: string | null = walletType === WalletType.INVISIBLE
+    ? invisibleWalletAddress
     : account?.address?.toString() || null;
   const isConnected = walletType !== null;
 
@@ -2509,7 +2493,7 @@ export default function SportsBook() {
           arguments: [walletAddress]
         })
       });
-      
+
       const data = await response.json();
       if (data && data[0]) {
         // smUSD has 8 decimals
@@ -2545,19 +2529,19 @@ export default function SportsBook() {
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
-    
+
     // Show splash screen for a minimum time, then cross-fade
     const fadeTimer = setTimeout(() => {
       // Start fading out splash and fading in main app simultaneously
       setIsSplashFading(true);
       setIsMainAppVisible(true);
-      
+
       // Remove splash from DOM after fade completes
       setTimeout(() => {
         setShowSplash(false);
       }, 500); // Match the CSS transition duration
     }, 1200);
-    
+
     return () => clearTimeout(fadeTimer);
   }, []);
 
@@ -2661,15 +2645,15 @@ export default function SportsBook() {
   // Sync bet modal odds when markets update from polling
   useEffect(() => {
     if (!betSelection) return;
-    
+
     // Find the updated market
     const updatedMarket = markets.find(m => m.game_id === betSelection.market.game_id);
     if (!updatedMarket) return;
-    
+
     // Get the new odds based on the selected outcome
     const newOdds = betSelection.outcome === 'home' ? updatedMarket.home_odds : updatedMarket.away_odds;
     const newOddsPositive = betSelection.outcome === 'home' ? updatedMarket.home_odds_positive : updatedMarket.away_odds_positive;
-    
+
     // Only update if odds actually changed
     if (newOdds !== betSelection.odds || newOddsPositive !== betSelection.oddsPositive) {
       setBetSelection(prev => prev ? {
@@ -2718,11 +2702,11 @@ export default function SportsBook() {
         };
         await signAndSubmitTransaction(payload);
       }
-      
+
       // Wait a bit for transaction to process, then refresh balance and bets
       await new Promise(resolve => setTimeout(resolve, 2000));
       await Promise.all([fetchSmUsdBalance(), fetchUserBets()]);
-      
+
       // Success! The modal will now show the success state
       // (don't close it here - the modal handles its own success UI)
     } catch (error) {
@@ -2758,7 +2742,7 @@ export default function SportsBook() {
   const pollData = useCallback(async () => {
     setIsPolling(true);
     const startTime = Date.now();
-    
+
     try {
       // Fetch all data in parallel
       const [marketsResponse] = await Promise.all([
@@ -2766,10 +2750,10 @@ export default function SportsBook() {
         isConnected && walletAddress ? fetchSmUsdBalance() : Promise.resolve(),
         isConnected && walletAddress ? fetchUserBets() : Promise.resolve(),
       ]);
-      
+
       const marketsData = await marketsResponse.json();
       const newMarkets = marketsData.markets || [];
-      
+
       // Only update markets if data changed (prevents unnecessary re-renders)
       const newMarketsJson = JSON.stringify(newMarkets);
       if (newMarketsJson !== previousMarketsRef.current) {
@@ -2831,8 +2815,8 @@ export default function SportsBook() {
   const filteredMarkets = markets.filter(market => {
     if (!teamSearch.trim()) return true;
     const search = teamSearch.toLowerCase();
-    return market.home_team.toLowerCase().includes(search) || 
-           market.away_team.toLowerCase().includes(search);
+    return market.home_team.toLowerCase().includes(search) ||
+      market.away_team.toLowerCase().includes(search);
   });
 
   const sortedMarkets = [...filteredMarkets].sort((a, b) => {
@@ -2863,355 +2847,354 @@ export default function SportsBook() {
     <>
       {/* Splash Screen Overlay */}
       {showSplash && <SplashScreen isFadingOut={isSplashFading} />}
-      
+
       {/* Main App with fade-in */}
-      <div className={`min-h-screen bg-black transition-opacity duration-500 ${
-        isMainAppVisible ? 'opacity-100' : 'opacity-0'
-      }`}>
-      <NavBar
-        isMobileMenuOpen={isMobileMenuOpen}
-        setIsMobileMenuOpen={setIsMobileMenuOpen}
-        walletAddress={walletAddress}
-        smUsdBalance={smUsdBalance}
-        onConnect={handleConnect}
-        onDisconnect={handleDisconnect}
-      />
-
-      {/* Main Content Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-white">
-          {/* Hero Section */}
-          <Hero isConnected={isConnected} onConnect={handleConnect} />
-
-          {/* Markets Section */}
-          <section id="markets" className="py-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b border-zinc-800 pb-4">
-              <h2 className="text-2xl sm:text-3xl font-bold">
-                Available Markets
-              </h2>
-              <div className="text-sm text-zinc-400">
-                {!loading && `${sortedMarkets.length} market${sortedMarkets.length !== 1 ? 's' : ''} found`}
-              </div>
-            </div>
-
-            {/* Search Input */}
-            <div className="relative mb-6">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-              <input
-                type="text"
-                value={teamSearch}
-                onChange={(e) => setTeamSearch(e.target.value)}
-                placeholder="Search by team name..."
-                className="w-full sm:w-80 bg-zinc-800 border border-zinc-700 rounded-lg pl-11 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#F5B400] focus:border-transparent"
-              />
-              {teamSearch && (
-                <button
-                  onClick={() => setTeamSearch('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            {/* Filter Tabs Row */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              {/* Market Status Filter */}
-              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-                {marketFilterTabs.map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setMarketFilter(tab.key)}
-                    className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${
-                      marketFilter === tab.key
-                        ? 'bg-[#F5B400] text-black'
-                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Sport Filter */}
-              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 sm:ml-auto">
-                {sportTabs.map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setSelectedSport(tab.key)}
-                    className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 flex items-center gap-2 ${
-                      selectedSport === tab.key
-                        ? 'bg-[#F5B400] text-black'
-                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
-                    }`}
-                  >
-                    {tab.icon}
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Date Sort Filter */}
-            <div className="flex items-center gap-3 mb-6">
-              <label className="text-zinc-400 text-sm">Sort by Date:</label>
-              <div className="flex gap-2">
-                {dateSortOptions.map((option) => (
-                  <button
-                    key={option.key}
-                    onClick={() => setDateSort(option.key)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      dateSort === option.key
-                        ? 'bg-[#F5B400] text-black'
-                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Markets List */}
-            <div className="space-y-4">
-              {loading ? (
-                // Loading skeletons
-                <>
-                  {[...Array(3)].map((_, i) => (
-                    <MarketCardSkeleton key={i} />
-                  ))}
-                </>
-              ) : paginatedMarkets.length === 0 ? (
-                // Empty state
-                <div className="bg-zinc-900 rounded-xl p-12 border border-zinc-800 text-center">
-                  <div className="text-4xl mb-4"><FaFootballBall className="mx-auto text-zinc-400" /></div>
-                  <h3 className="text-xl font-semibold mb-2">No Markets Found</h3>
-                  <p className="text-zinc-400">
-                    {marketFilter === 'active'
-                      ? 'There are no active markets at the moment. Check back later!'
-                      : `No ${marketFilter} markets to display.`}
-                  </p>
-                </div>
-              ) : (
-                // Market cards
-                paginatedMarkets.map((market) => (
-                  <MarketCard 
-                    key={market.game_id} 
-                    market={market} 
-                    onBetSelect={handleBetSelect}
-                    isWalletConnected={isConnected}
-                    isPolling={isPolling}
-                  />
-                ))
-              )}
-            </div>
-
-            {/* Pagination */}
-            {!loading && markets.length > 0 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-              />
-            )}
-          </section>
-
-          <section id="my-bets" className="py-8">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4">
-              My Bets
-            </h2>
-            <UserStats bets={userBets} isConnected={isConnected} />
-            <MyBetsSection
-              bets={userBets}
-              loading={loadingBets}
-              filter={betsFilter}
-              onFilterChange={setBetsFilter}
-              sort={betsSort}
-              onSortChange={setBetsSort}
-              viewMode={betsViewMode}
-              onViewModeChange={setBetsViewMode}
-              isConnected={isConnected}
-              onConnect={handleConnect}
-            />
-          </section>
-
-          {/* Faucet Section */}
-          <FaucetSection 
-            isConnected={isConnected}
-            walletAddress={walletAddress}
-            onConnect={handleConnect}
-            onBalanceUpdate={fetchSmUsdBalance}
-            signAndSubmitTransaction={async (payload: any) => {
-              if (walletType === WalletType.INVISIBLE) {
-                // Extract function details from payload for API call
-                const { function: fn, typeArguments, functionArguments } = payload.data;
-                return executeInvisibleTransaction(fn, typeArguments || [], functionArguments || []);
-              } else {
-                // EXISTING: Use external wallet directly
-                return signAndSubmitTransaction(payload);
-              }
-            }}
-          />
-
-          {/* MOVE Faucet Section */}
-          <MoveFaucetSection 
-            isConnected={isConnected}
-            walletAddress={walletAddress}
-            walletType={walletType}
-            onConnect={handleConnect}
-            onBalanceUpdate={fetchSmUsdBalance}
-          />
-
-          {/* Quick Start Section */}
-          <section id="quick-start" className="py-8">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4">
-              Quick Start
-            </h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              <a 
-                href="https://nightly.app/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200 block"
-              >
-                <div className="text-4xl mb-4"><FaDownload className="text-[#F5B400]" /></div>
-                <h3 className="text-xl font-semibold mb-2">Install Nightly Wallet</h3>
-                <p className="text-zinc-400">Download and install the Nightly wallet extension</p>
-              </a>
-              <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
-                <div className="text-4xl mb-4"><FaGlobe className="text-[#F5B400]" /></div>
-                <h3 className="text-xl font-semibold mb-2">Connect to Testnet</h3>
-                <p className="text-zinc-400">Switch to Movement Network testnet in your wallet</p>
-              </div>
-              <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
-                <div className="text-4xl mb-4"><FaLink className="text-[#F5B400]" /></div>
-                <h3 className="text-xl font-semibold mb-2">Connect Wallet</h3>
-                <p className="text-zinc-400">Link your Movement wallet to get started</p>
-              </div>
-              <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
-                <div className="text-4xl mb-4"><FaTint className="text-[#F5B400]" /></div>
-                <h3 className="text-xl font-semibold mb-2">Fund smUSD</h3>
-                <p className="text-zinc-400">Register your address and mint yourself smUSD</p>
-              </div>
-              <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
-                <div className="text-4xl mb-4"><FaFootballBall className="text-[#F5B400]" /></div>
-                <h3 className="text-xl font-semibold mb-2">Browse Markets</h3>
-                <p className="text-zinc-400">Explore available sports betting markets</p>
-              </div>
-              <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
-                <div className="text-4xl mb-4"><FaMoneyBill1Wave className="text-[#F5B400]" /></div>
-                <h3 className="text-xl font-semibold mb-2">Place Bets</h3>
-                <p className="text-zinc-400">Place your bets securely on-chain</p>
-              </div>
-            </div>
-          </section>
-
-          {/* Videos Section */}
-          <VideoSection />
-        </div>
-      </main>
-
-      {/* Professional Footer */}
-      <footer className="border-t border-zinc-800 mt-12 bg-zinc-900/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-            {/* Brand Column */}
-            <div className="lg:col-span-1">
-              <Image
-                src="/SPORTS_MOVE_LOGO.png"
-                alt="Sports Move Logo"
-                width={160}
-                height={40}
-                className="h-8 w-auto mb-4"
-              />
-              <p className="text-zinc-400 text-sm mb-4">
-                Decentralized sports betting powered by the Movement Network. 
-                Fair, transparent, and on-chain.
-              </p>
-              <div className="flex gap-4">
-                <a href="#" className="text-zinc-500 hover:text-[#F5B400] transition-colors">
-                  <FaTwitter size={20} />
-                </a>
-                <a href="#" className="text-zinc-500 hover:text-[#F5B400] transition-colors">
-                  <FaDiscord size={20} />
-                </a>
-                <a href="#" className="text-zinc-500 hover:text-[#F5B400] transition-colors">
-                  <FaGithub size={20} />
-                </a>
-              </div>
-            </div>
-
-            {/* Navigation Column */}
-            <div>
-              <h4 className="text-white font-semibold mb-4">Navigation</h4>
-              <ul className="space-y-2">
-                <li><a href="#markets" className="text-zinc-400 hover:text-white transition-colors text-sm">Markets</a></li>
-                <li><a href="#my-bets" className="text-zinc-400 hover:text-white transition-colors text-sm">My Bets</a></li>
-                <li><a href="#faucet" className="text-zinc-400 hover:text-white transition-colors text-sm">Faucet</a></li>
-                <li><a href="#quick-start" className="text-zinc-400 hover:text-white transition-colors text-sm">Quick Start</a></li>
-                <li><a href="#videos" className="text-zinc-400 hover:text-white transition-colors text-sm">Videos</a></li>
-              </ul>
-            </div>
-
-            {/* Resources Column */}
-            <div>
-              <h4 className="text-white font-semibold mb-4">Resources</h4>
-              <ul className="space-y-2">
-                <li><a href="https://nightly.app/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm">Nightly Wallet</a></li>
-                <li><a href="https://explorer.movementnetwork.xyz/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm">Block Explorer</a></li>
-                <li><a href="https://movementnetwork.xyz/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm">Movement Network</a></li>
-              </ul>
-            </div>
-
-            {/* Sports Column */}
-            <div>
-              <h4 className="text-white font-semibold mb-4">Supported Sports</h4>
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2 text-zinc-400 text-sm"><FaFootballBall className="text-orange-500" /> NFL</li>
-                <li className="flex items-center gap-2 text-zinc-400 text-sm"><FaBasketballBall className="text-orange-400" /> NBA</li>
-                <li className="flex items-center gap-2 text-zinc-400 text-sm"><FaHockeyPuck className="text-blue-400" /> NHL</li>
-                <li className="flex items-center gap-2 text-zinc-400 text-sm"><FaBaseballBall className="text-red-500" /> MLB</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Bottom Bar */}
-          <div className="border-t border-zinc-800 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-zinc-500 text-sm">
-              © 2025 Sports Move. All rights reserved.
-            </p>
-            <p className="text-zinc-500 text-sm">
-              Built on <span className="text-[#F5B400]">Movement Network</span> Testnet
-            </p>
-          </div>
-        </div>
-      </footer>
-
-      {/* Bet Modal */}
-      {betSelection && (
-        <BetModal
-          selection={betSelection}
-          balance={smUsdBalance}
-          onClose={() => setBetSelection(null)}
-          onPlaceBet={handlePlaceBet}
-          isPlacingBet={isPlacingBet}
+      <div className={`min-h-screen bg-black transition-opacity duration-500 ${isMainAppVisible ? 'opacity-100' : 'opacity-0'
+        }`}>
+        <NavBar
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
+          walletAddress={walletAddress}
+          smUsdBalance={smUsdBalance}
+          onConnect={handleConnect}
+          onDisconnect={handleDisconnect}
         />
-      )}
 
-      {/* Refresh Timer */}
-      <RefreshTimer
-        secondsUntilRefresh={secondsUntilRefresh}
-        isPolling={isPolling}
-        onManualRefresh={handleManualRefresh}
-      />
+        {/* Main Content Container */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-white">
+            {/* Hero Section */}
+            <Hero isConnected={isConnected} onConnect={handleConnect} />
 
-      {/* Wallet Connection Dialog */}
-      <WalletConnectionDialog
-        isOpen={showWalletDialog}
-        onClose={() => setShowWalletDialog(false)}
-        onConnectExternal={handleConnectExternal}
-        onInvisibleWalletConnected={handleInvisibleWalletConnected}
-      />
+            {/* Markets Section */}
+            <section id="markets" className="py-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b border-zinc-800 pb-4">
+                <h2 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
+                  <FaChartLine className="text-[#F5B400]" />
+                  Available Markets
+                </h2>
+                <div className="text-sm text-zinc-400">
+                  {!loading && `${sortedMarkets.length} market${sortedMarkets.length !== 1 ? 's' : ''} found`}
+                </div>
+              </div>
+
+              {/* Search Input */}
+              <div className="relative mb-6">
+                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <input
+                  type="text"
+                  value={teamSearch}
+                  onChange={(e) => setTeamSearch(e.target.value)}
+                  placeholder="Search by team name..."
+                  className="w-full sm:w-80 bg-zinc-800 border border-zinc-700 rounded-lg pl-11 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#F5B400] focus:border-transparent"
+                />
+                {teamSearch && (
+                  <button
+                    onClick={() => setTeamSearch('')}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Filter Tabs Row */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                {/* Market Status Filter */}
+                <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+                  {marketFilterTabs.map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setMarketFilter(tab.key)}
+                      className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${marketFilter === tab.key
+                        ? 'bg-[#F5B400] text-black'
+                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                        }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sport Filter */}
+                <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 sm:ml-auto">
+                  {sportTabs.map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setSelectedSport(tab.key)}
+                      className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 flex items-center gap-2 ${selectedSport === tab.key
+                        ? 'bg-[#F5B400] text-black'
+                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                        }`}
+                    >
+                      {tab.icon}
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Date Sort Filter */}
+              <div className="flex items-center gap-3 mb-6">
+                <label className="text-zinc-400 text-sm">Sort by Date:</label>
+                <div className="flex gap-2">
+                  {dateSortOptions.map((option) => (
+                    <button
+                      key={option.key}
+                      onClick={() => setDateSort(option.key)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${dateSort === option.key
+                        ? 'bg-[#F5B400] text-black'
+                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                        }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Markets List */}
+              <div className="space-y-4">
+                {loading ? (
+                  // Loading skeletons
+                  <>
+                    {[...Array(3)].map((_, i) => (
+                      <MarketCardSkeleton key={i} />
+                    ))}
+                  </>
+                ) : paginatedMarkets.length === 0 ? (
+                  // Empty state
+                  <div className="bg-zinc-900 rounded-xl p-12 border border-zinc-800 text-center">
+                    <div className="text-4xl mb-4"><FaFootballBall className="mx-auto text-zinc-400" /></div>
+                    <h3 className="text-xl font-semibold mb-2">No Markets Found</h3>
+                    <p className="text-zinc-400">
+                      {marketFilter === 'active'
+                        ? 'There are no active markets at the moment. Check back later!'
+                        : `No ${marketFilter} markets to display.`}
+                    </p>
+                  </div>
+                ) : (
+                  // Market cards
+                  paginatedMarkets.map((market) => (
+                    <MarketCard
+                      key={market.game_id}
+                      market={market}
+                      onBetSelect={handleBetSelect}
+                      isWalletConnected={isConnected}
+                      isPolling={isPolling}
+                    />
+                  ))
+                )}
+              </div>
+
+              {/* Pagination */}
+              {!loading && markets.length > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              )}
+            </section>
+
+            <section id="my-bets" className="py-8">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4 flex items-center gap-3">
+                <FaDice className="text-[#F5B400]" />
+                My Bets
+              </h2>
+              <UserStats bets={userBets} isConnected={isConnected} />
+              <MyBetsSection
+                bets={userBets}
+                loading={loadingBets}
+                filter={betsFilter}
+                onFilterChange={setBetsFilter}
+                sort={betsSort}
+                onSortChange={setBetsSort}
+                viewMode={betsViewMode}
+                onViewModeChange={setBetsViewMode}
+                isConnected={isConnected}
+                onConnect={handleConnect}
+              />
+            </section>
+
+            {/* Faucet Section */}
+            <FaucetSection
+              isConnected={isConnected}
+              walletAddress={walletAddress}
+              onConnect={handleConnect}
+              onBalanceUpdate={fetchSmUsdBalance}
+              signAndSubmitTransaction={async (payload: any) => {
+                if (walletType === WalletType.INVISIBLE) {
+                  // Extract function details from payload for API call
+                  const { function: fn, typeArguments, functionArguments } = payload.data;
+                  return executeInvisibleTransaction(fn, typeArguments || [], functionArguments || []);
+                } else {
+                  // EXISTING: Use external wallet directly
+                  return signAndSubmitTransaction(payload);
+                }
+              }}
+            />
+
+            {/* MOVE Faucet Section */}
+            <MoveFaucetSection
+              isConnected={isConnected}
+              walletAddress={walletAddress}
+              walletType={walletType}
+              onConnect={handleConnect}
+              onBalanceUpdate={fetchSmUsdBalance}
+            />
+
+            {/* Quick Start Section */}
+            <section id="quick-start" className="py-8">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-6 border-b border-zinc-800 pb-4 flex items-center gap-3">
+                <FaRocket className="text-[#F5B400]" />
+                Quick Start
+              </h2>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <a
+                  href="https://nightly.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200 block"
+                >
+                  <div className="text-4xl mb-4"><FaDownload className="text-[#F5B400]" /></div>
+                  <h3 className="text-xl font-semibold mb-2">Install Nightly Wallet</h3>
+                  <p className="text-zinc-400">Download and install the Nightly wallet extension</p>
+                </a>
+                <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
+                  <div className="text-4xl mb-4"><FaGlobe className="text-[#F5B400]" /></div>
+                  <h3 className="text-xl font-semibold mb-2">Connect to Testnet</h3>
+                  <p className="text-zinc-400">Switch to Movement Network testnet in your wallet</p>
+                </div>
+                <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
+                  <div className="text-4xl mb-4"><FaLink className="text-[#F5B400]" /></div>
+                  <h3 className="text-xl font-semibold mb-2">Connect Wallet</h3>
+                  <p className="text-zinc-400">Link your Movement wallet to get started</p>
+                </div>
+                <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
+                  <div className="text-4xl mb-4"><FaTint className="text-[#F5B400]" /></div>
+                  <h3 className="text-xl font-semibold mb-2">Fund smUSD</h3>
+                  <p className="text-zinc-400">Register your address and mint yourself smUSD</p>
+                </div>
+                <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
+                  <div className="text-4xl mb-4"><FaFootballBall className="text-[#F5B400]" /></div>
+                  <h3 className="text-xl font-semibold mb-2">Browse Markets</h3>
+                  <p className="text-zinc-400">Explore available sports betting markets</p>
+                </div>
+                <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 hover:border-[#F5B400]/50 transition-colors duration-200">
+                  <div className="text-4xl mb-4"><FaMoneyBill1Wave className="text-[#F5B400]" /></div>
+                  <h3 className="text-xl font-semibold mb-2">Place Bets</h3>
+                  <p className="text-zinc-400">Place your bets securely on-chain</p>
+                </div>
+              </div>
+            </section>
+
+            {/* Videos Section */}
+            <VideoSection />
+          </div>
+        </main>
+
+        {/* Professional Footer */}
+        <footer className="border-t border-zinc-800 mt-12 bg-zinc-900/50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+              {/* Brand Column */}
+              <div className="lg:col-span-1">
+                <Image
+                  src="/SPORTS_MOVE_LOGO.png"
+                  alt="Sports Move Logo"
+                  width={160}
+                  height={40}
+                  className="h-8 w-auto mb-4"
+                />
+                <p className="text-zinc-400 text-sm mb-4">
+                  Decentralized sports betting powered by the Movement Network.
+                  Fair, transparent, and on-chain.
+                </p>
+                <div className="flex gap-4">
+                  <a href="#" className="text-zinc-500 hover:text-[#F5B400] transition-colors">
+                    <FaTwitter size={20} />
+                  </a>
+                  <a href="#" className="text-zinc-500 hover:text-[#F5B400] transition-colors">
+                    <FaDiscord size={20} />
+                  </a>
+                  <a href="#" className="text-zinc-500 hover:text-[#F5B400] transition-colors">
+                    <FaGithub size={20} />
+                  </a>
+                </div>
+              </div>
+
+              {/* Navigation Column */}
+              <div>
+                <h4 className="text-white font-semibold mb-4">Navigation</h4>
+                <ul className="space-y-2">
+                  <li><a href="#markets" className="text-zinc-400 hover:text-white transition-colors text-sm">Markets</a></li>
+                  <li><a href="#my-bets" className="text-zinc-400 hover:text-white transition-colors text-sm">My Bets</a></li>
+                  <li><a href="#faucet" className="text-zinc-400 hover:text-white transition-colors text-sm">Faucet</a></li>
+                  <li><a href="#quick-start" className="text-zinc-400 hover:text-white transition-colors text-sm">Quick Start</a></li>
+                  <li><a href="#videos" className="text-zinc-400 hover:text-white transition-colors text-sm">Videos</a></li>
+                </ul>
+              </div>
+
+              {/* Resources Column */}
+              <div>
+                <h4 className="text-white font-semibold mb-4">Resources</h4>
+                <ul className="space-y-2">
+                  <li><a href="https://nightly.app/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm">Nightly Wallet</a></li>
+                  <li><a href="https://explorer.movementnetwork.xyz/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm">Block Explorer</a></li>
+                  <li><a href="https://movementnetwork.xyz/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm">Movement Network</a></li>
+                </ul>
+              </div>
+
+              {/* Sports Column */}
+              <div>
+                <h4 className="text-white font-semibold mb-4">Supported Sports</h4>
+                <ul className="space-y-2">
+                  <li className="flex items-center gap-2 text-zinc-400 text-sm"><FaFootballBall className="text-orange-500" /> NFL</li>
+                  <li className="flex items-center gap-2 text-zinc-400 text-sm"><FaBasketballBall className="text-orange-400" /> NBA</li>
+                  <li className="flex items-center gap-2 text-zinc-400 text-sm"><FaHockeyPuck className="text-blue-400" /> NHL</li>
+                  <li className="flex items-center gap-2 text-zinc-400 text-sm"><FaBaseballBall className="text-red-500" /> MLB</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Bottom Bar */}
+            <div className="border-t border-zinc-800 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <p className="text-zinc-500 text-sm">
+                © 2025 Sports Move. All rights reserved.
+              </p>
+              <p className="text-zinc-500 text-sm">
+                Built on <span className="text-[#F5B400]">Movement Network</span> Testnet
+              </p>
+            </div>
+          </div>
+        </footer>
+
+        {/* Bet Modal */}
+        {betSelection && (
+          <BetModal
+            selection={betSelection}
+            balance={smUsdBalance}
+            onClose={() => setBetSelection(null)}
+            onPlaceBet={handlePlaceBet}
+            isPlacingBet={isPlacingBet}
+          />
+        )}
+
+        {/* Refresh Timer */}
+        <RefreshTimer
+          secondsUntilRefresh={secondsUntilRefresh}
+          isPolling={isPolling}
+          onManualRefresh={handleManualRefresh}
+        />
+
+        {/* Wallet Connection Dialog */}
+        <WalletConnectionDialog
+          isOpen={showWalletDialog}
+          onClose={() => setShowWalletDialog(false)}
+          onConnectExternal={handleConnectExternal}
+          onInvisibleWalletConnected={handleInvisibleWalletConnected}
+        />
       </div>
     </>
   );
