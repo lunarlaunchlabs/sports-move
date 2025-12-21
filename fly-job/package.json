@@ -1,0 +1,12 @@
+{
+  "name": "sports-move-job",
+  "version": "1.0.0",
+  "description": "Background job service for Sports Move - syncs markets and scores",
+  "main": "job.js",
+  "scripts": {
+    "start": "node job.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

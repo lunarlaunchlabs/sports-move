@@ -1,0 +1,16 @@
+app = "sports-move-job"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PRODUCTION_URL = "https://sports-move.vercel.app"
+
+[[restart]]
+  policy = "always"
+  max_retries = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
