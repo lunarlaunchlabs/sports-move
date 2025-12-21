@@ -5,7 +5,7 @@ import { useClerk, useUser } from '@clerk/nextjs';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Confetti from 'react-confetti';
-import { FaBaseballBall, FaBasketballBall, FaBook, FaChartLine, FaChevronLeft, FaChevronRight, FaCogs, FaCoins, FaDice, FaDiscord, FaDownload, FaFootballBall, FaFutbol, FaGithub, FaGlobe, FaHandshake, FaHockeyPuck, FaLink, FaLock, FaPlay, FaRocket, FaSearch, FaTint, FaTwitter, FaYoutube } from 'react-icons/fa';
+import { FaBaseballBall, FaBasketballBall, FaBook, FaChartLine, FaChevronLeft, FaChevronRight, FaCogs, FaCoins, FaDice, FaDiscord, FaDownload, FaFootballBall, FaFutbol, FaGithub, FaGlobe, FaHandshake, FaHockeyPuck, FaLink, FaLock, FaPlay, FaRocket, FaSearch, FaTint, FaTrophy, FaTwitter, FaYoutube } from 'react-icons/fa';
 import { FaMoneyBill1Wave } from 'react-icons/fa6';
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { WalletConnectionDialog } from './components/WalletConnectionDialog';
@@ -1522,6 +1522,13 @@ interface VideoItem {
 }
 
 const videos: VideoItem[] = [
+  {
+    id: 'submission',
+    title: 'Submission Video',
+    description: 'Our official competition entry for the Movement Network competition',
+    youtubeId: 'dQw4w9WgXcQ', // Placeholder - replace with actual YouTube ID
+    icon: <FaTrophy className="w-5 h-5" />,
+  },
   {
     id: 'welcome',
     title: 'Welcome to SportsMove',
