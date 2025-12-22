@@ -6,6 +6,7 @@ primary_region = "iad"
 
 [env]
   PRODUCTION_URL = "https://sports-move.vercel.app"
+  TZ = "America/New_York"
 
 [[restart]]
   policy = "always"

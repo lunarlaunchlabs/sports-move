@@ -6,7 +6,7 @@
  * This script runs continuously in the background, syncing markets and scores
  * for all supported sports on the Sports Move platform.
  * 
- * QUIET HOURS: 1AM - 8AM local time
+ * QUIET HOURS: 1AM - 8AM EST (America/New_York)
  * - The script will pause during these hours to avoid unnecessary API calls
  * - If a job is running when 1AM hits, it will complete before pausing
  * - At 8AM sharp, the script automatically resumes
@@ -20,7 +20,7 @@
 
 const PRODUCTION_URL = process.env.PRODUCTION_URL || 'https://sports-move.vercel.app';
 
-// Quiet hours configuration (local time)
+// Quiet hours configuration (EST - set via TZ env var in fly.toml)
 const QUIET_HOURS_START = 1;  // 1 AM
 const QUIET_HOURS_END = 8;    // 8 AM
 
@@ -232,7 +232,7 @@ async function main() {
   console.log('🏀 SPORTS MOVE JOB SERVICE (Fly.io)');
   console.log('═'.repeat(60));
   console.log(`📡 Target: ${PRODUCTION_URL}`);
-  console.log(`🌙 Quiet Hours: ${QUIET_HOURS_START}AM - ${QUIET_HOURS_END}AM local time`);
+  console.log(`🌙 Quiet Hours: ${QUIET_HOURS_START}AM - ${QUIET_HOURS_END}AM EST`);
   console.log(`⏰ Started at: ${new Date().toLocaleString()}`);
   console.log('═'.repeat(60));
   
