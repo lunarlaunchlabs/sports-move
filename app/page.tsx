@@ -2321,7 +2321,7 @@ function RefreshTimer({ secondsUntilRefresh, isPolling, onManualRefresh }: Refre
   const progress = ((60 - secondsUntilRefresh) / 60) * 100;
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 flex items-center gap-2 bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-full px-3 py-2 shadow-lg">
+    <div className="fixed bottom-4 right-4 z-[60] flex items-center gap-2 bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-full px-3 py-2 shadow-lg">
       {/* Circular Progress */}
       <div className="relative w-8 h-8">
         <svg className="w-8 h-8 -rotate-90" viewBox="0 0 32 32">
