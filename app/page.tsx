@@ -1526,7 +1526,7 @@ const videos: VideoItem[] = [
     id: 'submission',
     title: 'Submission Video',
     description: 'Our official competition entry for the Movement Network competition',
-    youtubeId: 'dQw4w9WgXcQ', // Placeholder - replace with actual YouTube ID
+    youtubeId: 'qUISbA7AOHI', // Placeholder - replace with actual YouTube ID
     icon: <FaTrophy className="w-5 h-5" />,
   },
   {
