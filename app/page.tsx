@@ -1530,20 +1530,6 @@ const videos: VideoItem[] = [
     icon: <FaTrophy className="w-5 h-5" />,
   },
   {
-    id: 'welcome',
-    title: 'Welcome to SportsMove',
-    description: 'An introduction to decentralized sports betting on Movement Network',
-    youtubeId: 'dQw4w9WgXcQ', // Placeholder - replace with actual YouTube ID
-    icon: <FaHandshake className="w-5 h-5" />,
-  },
-  {
-    id: 'how-to-use',
-    title: 'How to Use SportsMove',
-    description: 'A step-by-step guide to placing your first bet',
-    youtubeId: 'dQw4w9WgXcQ', // Placeholder - replace with actual YouTube ID
-    icon: <FaBook className="w-5 h-5" />,
-  },
-  {
     id: 'technicals',
     title: 'The Technicals',
     description: 'Deep dive into the smart contracts and architecture',
