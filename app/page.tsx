@@ -5,7 +5,7 @@ import { useClerk, useUser } from '@clerk/nextjs';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Confetti from 'react-confetti';
-import { FaBaseballBall, FaBasketballBall, FaBook, FaChartLine, FaChevronLeft, FaChevronRight, FaCogs, FaCoins, FaDice, FaDiscord, FaDownload, FaFootballBall, FaFutbol, FaGithub, FaGlobe, FaHandshake, FaHockeyPuck, FaLink, FaLock, FaPlay, FaRocket, FaSearch, FaTint, FaTrophy, FaTwitter, FaYoutube } from 'react-icons/fa';
+import { FaBaseballBall, FaBasketballBall, FaBook, FaChartLine, FaChevronLeft, FaChevronRight, FaClosedCaptioning, FaCogs, FaCoins, FaDice, FaDiscord, FaDownload, FaFootballBall, FaFutbol, FaGithub, FaGlobe, FaHandshake, FaHockeyPuck, FaLink, FaLock, FaPlay, FaRocket, FaSearch, FaTint, FaTrophy, FaTwitter, FaYoutube } from 'react-icons/fa';
 import { FaMoneyBill1Wave } from 'react-icons/fa6';
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { WalletConnectionDialog } from './components/WalletConnectionDialog';
@@ -1620,6 +1620,10 @@ function VideoSection() {
                 <h3 className="text-lg font-bold text-white">
                   {selectedVideo.title}
                 </h3>
+                <span className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-700/80 rounded-full text-xs font-medium text-zinc-300 border border-zinc-600">
+                  <FaClosedCaptioning className="w-3.5 h-3.5" />
+                  Captions Available
+                </span>
               </div>
               <p className="text-zinc-400 text-sm">
                 {selectedVideo.description}
