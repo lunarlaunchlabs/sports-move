@@ -1533,7 +1533,7 @@ const videos: VideoItem[] = [
     id: 'technicals',
     title: 'The Technicals',
     description: 'Deep dive into the smart contracts and architecture',
-    youtubeId: 'dQw4w9WgXcQ', // Placeholder - replace with actual YouTube ID
+    youtubeId: 'FMgDI2cGDhs', // Placeholder - replace with actual YouTube ID
     icon: <FaCogs className="w-5 h-5" />,
   },
   {
